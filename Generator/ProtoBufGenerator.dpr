@@ -9,7 +9,8 @@ uses
   StrBuffer in '..\StrBuffer.pas',
   uAbstractProtoBufClasses in '..\uAbstractProtoBufClasses.pas',
   uProtoBufParserClasses in 'uProtoBufParserClasses.pas',
-  uProtoBufParserAbstractClasses in 'uProtoBufParserAbstractClasses.pas';
+  uProtoBufParserAbstractClasses in 'uProtoBufParserAbstractClasses.pas',
+  uProtoBufGenerator in 'uProtoBufGenerator.pas';
 
 {$R *.res}
 

@@ -18,7 +18,14 @@ uses
   DUnitTestRunner,
   TestuProtoBufParserClasses in 'TestuProtoBufParserClasses.pas',
   uProtoBufParserClasses in '..\uProtoBufParserClasses.pas',
-  uProtoBufParserAbstractClasses in '..\uProtoBufParserAbstractClasses.pas';
+  uProtoBufParserAbstractClasses in '..\uProtoBufParserAbstractClasses.pas',
+  uProtoBufGenerator in '..\uProtoBufGenerator.pas',
+  uAbstractProtoBufClasses in '..\..\uAbstractProtoBufClasses.pas',
+  pbInput in '..\..\pbInput.pas',
+  pbOutput in '..\..\pbOutput.pas',
+  pbPublic in '..\..\pbPublic.pas',
+  StrBuffer in '..\..\StrBuffer.pas',
+  TestuProtoBufGenerator in 'TestuProtoBufGenerator.pas';
 
 {R *.RES}
 

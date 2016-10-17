@@ -13,7 +13,8 @@ type
     ptDefaultRequired, //
     ptRequired, //
     ptOptional, //
-    ptRepeated, ptReserved);
+    ptRepeated, //
+    ptReserved);
 
   TScalarPropertyType = ( //
     sptComplex, //
@@ -42,12 +43,17 @@ type
   end;
 
   TProtoBufPropOptions = class(TAbstractProtoBufParserContainer<TProtoBufPropOption>)
+  private
+    function GetHasValue(const OptionName: string): Boolean;
+    function GetValue(const OptionName: string): string;
   public
     procedure ParseFromProto(const Proto: string; var iPos: integer); override;
+    property HasValue[const OptionName: string]: Boolean read GetHasValue;
+    property Value[const OptionName: string]: string read GetValue;
   end;
 
   TProtoBufProperty = class(TAbstractProtoBufParserItem)
-  private
+  strict private
     FPropTag: integer;
     FPropType: string;
     FPropKind: TPropKind;
@@ -67,7 +73,7 @@ type
   end;
 
   TProtoBufEnumValue = class(TAbstractProtoBufParserItem)
-  private
+  strict private
     FValue: integer;
   public
     procedure ParseFromProto(const Proto: string; var iPos: integer); override;
@@ -86,9 +92,13 @@ type
   end;
 
   TProtoBufEnumList = class(TObjectList<TProtoBufEnum>)
+  public
+    function FindByName(const EnumName: string): TProtoBufEnum;
   end;
 
   TProtoBufMessageList = class(TObjectList<TProtoBufMessage>)
+  public
+    function FindByName(const MessageName: string): TProtoBufMessage;
   end;
 
   TProtoFile = class(TAbstractProtoBufParserItem)
@@ -96,7 +106,7 @@ type
     FProtoBufMessages: TProtoBufMessageList;
     FProtoBufEnums: TProtoBufEnumList;
   public
-    constructor Create;
+    constructor Create; override;
     destructor Destroy; override;
 
     procedure ParseFromProto(const Proto: string; var iPos: integer); override;
@@ -104,6 +114,8 @@ type
     property ProtoBufEnums: TProtoBufEnumList read FProtoBufEnums;
     property ProtoBufMessages: TProtoBufMessageList read FProtoBufMessages;
   end;
+
+function StrToPropertyType(const AStr: string): TScalarPropertyType;
 
 implementation
 
@@ -128,13 +140,65 @@ begin
   end;
 end;
 
-function StrToPropKind(const Astr: string): TPropKind;
+function StrToPropKind(const AStr: string): TPropKind;
 var
   i: TPropKind;
 begin
   Result := Low(TPropKind);
   for i := Low(TPropKind) to High(TPropKind) do
-    if SameStr(PropKindToStr(i), Astr) then
+    if SameStr(PropKindToStr(i), AStr) then
+      begin
+        Result := i;
+        Break;
+      end;
+end;
+
+function PropertyTypeToStr(PropType: TScalarPropertyType): string;
+begin
+  Result := '';
+  case PropType of
+    sptComplex:
+      ;
+    sptDouble:
+      Result := 'double';
+    sptFloat:
+      Result := 'float';
+    sptInt32:
+      Result := 'int32';
+    sptInt64:
+      Result := 'int64';
+    sptuInt32:
+      Result := 'uint32';
+    sptUint64:
+      Result := 'uint64';
+    sptSInt32:
+      Result := 'sint32';
+    sptSInt64:
+      Result := 'sint64';
+    sptFixed32:
+      Result := 'fixed32';
+    sptFixed64:
+      Result := 'fixed64';
+    sptSFixed32:
+      Result := 'sfixed32';
+    sptSFixed64:
+      Result := 'sfixed64';
+    sptBool:
+      Result := 'bool';
+    sptString:
+      Result := 'string';
+    sptBytes:
+      Result := 'bytes';
+  end;
+end;
+
+function StrToPropertyType(const AStr: string): TScalarPropertyType;
+var
+  i: TScalarPropertyType;
+begin
+  Result := Low(TScalarPropertyType);
+  for i := Low(TScalarPropertyType) to High(TScalarPropertyType) do
+    if SameStr(PropertyTypeToStr(i), AStr) then
       begin
         Result := i;
         Break;
@@ -275,7 +339,8 @@ begin
   else
     begin
       Inc(iPos);
-      FOptionValue := ReadAllTillChar(Proto, iPos, ['"']);
+      { TODO : Solve problem with double "" in the middle of string... }
+      FOptionValue := '"' + ReadAllTillChar(Proto, iPos, ['"']) + '"';
       SkipRequiredChar(Proto, iPos, '"');
     end;
 
@@ -285,6 +350,32 @@ begin
 end;
 
 { TProtoBufPropOptions }
+
+function TProtoBufPropOptions.GetHasValue(const OptionName: string): Boolean;
+var
+  i: integer;
+begin
+  Result := False;
+  for i := 0 to Count - 1 do
+    if Items[i].Name = OptionName then
+      begin
+        Result := True;
+        Break;
+      end;
+end;
+
+function TProtoBufPropOptions.GetValue(const OptionName: string): string;
+var
+  i: integer;
+begin
+  Result := '';
+  for i := 0 to Count - 1 do
+    if Items[i].Name = OptionName then
+      begin
+        Result := Items[i].OptionValue;
+        Break;
+      end;
+end;
 
 procedure TProtoBufPropOptions.ParseFromProto(const Proto: string; var iPos: integer);
 var
@@ -348,6 +439,12 @@ begin
       end;
     end;
   SkipRequiredChar(Proto, iPos, '}');
+
+  Sort(TComparer<TProtoBufEnumValue>.Construct(
+    function(const Left, Right: TProtoBufEnumValue): integer
+    begin
+      Result := Left.Value - Right.Value;
+    end));
 end;
 
 { TProtoBufMessage }
@@ -384,16 +481,15 @@ begin
   Sort(TComparer<TProtoBufProperty>.Construct(
     function(const Left, Right: TProtoBufProperty): integer
     begin
-      Result:=Left.PropTag - Right.PropTag;
-    end
-  ));
+      Result := Left.PropTag - Right.PropTag;
+    end));
 end;
 
 { TProtoFile }
 
 constructor TProtoFile.Create;
 begin
-  inherited Create;
+  inherited;
   FProtoBufMessages := TProtoBufMessageList.Create;
   FProtoBufEnums := TProtoBufEnumList.Create;
 end;
@@ -453,6 +549,36 @@ begin
           end;
         end;
     end;
+end;
+
+{ TProtoBufMessageList }
+
+function TProtoBufMessageList.FindByName(const MessageName: string): TProtoBufMessage;
+var
+  i: integer;
+begin
+  Result := nil;
+  for i := 0 to Count - 1 do
+    if Items[i].Name = MessageName then
+      begin
+        Result := Items[i];
+        Break;
+      end;
+end;
+
+{ TProtoBufEnumList }
+
+function TProtoBufEnumList.FindByName(const EnumName: string): TProtoBufEnum;
+var
+  i: integer;
+begin
+  Result := nil;
+  for i := 0 to Count - 1 do
+    if Items[i].Name = EnumName then
+      begin
+        Result := Items[i];
+        Break;
+      end;
 end;
 
 end.

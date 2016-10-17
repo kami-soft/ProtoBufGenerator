@@ -35,8 +35,7 @@ end;
 
 { TAbstractProtoBufParserContainer<T> }
 
-procedure TAbstractProtoBufParserContainer<T>.ParseFromProto(
-  const Proto: string; var iPos: Integer);
+procedure TAbstractProtoBufParserContainer<T>.ParseFromProto(const Proto: string; var iPos: Integer);
 begin
   Clear;
 end;

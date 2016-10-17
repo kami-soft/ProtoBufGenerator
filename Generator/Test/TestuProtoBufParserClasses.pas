@@ -205,7 +205,7 @@ begin
   CheckEquals('default', FProtoBufProperty.PropOptions[0].Name);
   CheckEquals('Val2', FProtoBufProperty.PropOptions[0].OptionValue);
   CheckEquals('packed', FProtoBufProperty.PropOptions[1].Name);
-  CheckEquals('true value', FProtoBufProperty.PropOptions[1].OptionValue);
+  CheckEquals('"true value"', FProtoBufProperty.PropOptions[1].OptionValue);
   CheckEquals(' def field 1, default value 2', FProtoBufProperty.PropComment);
 
   iPos := 1;
@@ -221,7 +221,7 @@ begin
   CheckEquals('default', FProtoBufProperty.PropOptions[0].Name);
   CheckEquals('Val2', FProtoBufProperty.PropOptions[0].OptionValue);
   CheckEquals('packed', FProtoBufProperty.PropOptions[1].Name);
-  CheckEquals('true value', FProtoBufProperty.PropOptions[1].OptionValue);
+  CheckEquals('"true value"', FProtoBufProperty.PropOptions[1].OptionValue);
   CheckEquals(' def field 1, default value 2', FProtoBufProperty.PropComment);
 
   iPos := 1;
@@ -237,7 +237,7 @@ begin
   CheckEquals('default', FProtoBufProperty.PropOptions[0].Name);
   CheckEquals('Val2', FProtoBufProperty.PropOptions[0].OptionValue);
   CheckEquals('packed', FProtoBufProperty.PropOptions[1].Name);
-  CheckEquals('true value', FProtoBufProperty.PropOptions[1].OptionValue);
+  CheckEquals('"true value"', FProtoBufProperty.PropOptions[1].OptionValue);
   CheckEquals(' def field 1, default value 2', FProtoBufProperty.PropComment);
 end;
 
