@@ -193,7 +193,7 @@ begin
   CheckEquals(' def field 1, default value 2', FProtoBufProperty.PropComment);
 
   iPos := 1;
-  Proto := 'optional int32   DefField1  = 1  [default = Val2, packed = "true value" ]; // def field 1, default value 2';
+  Proto := 'optional int32   DefField1  = 1  [default = Val2, packed = "true"" value"""'#13#10' ]; // def field 1, default value 2';
   // TODO: Setup method call parameters
   FProtoBufProperty.ParseFromProto(Proto, iPos);
   // TODO: Validate method results
@@ -205,7 +205,7 @@ begin
   CheckEquals('default', FProtoBufProperty.PropOptions[0].Name);
   CheckEquals('Val2', FProtoBufProperty.PropOptions[0].OptionValue);
   CheckEquals('packed', FProtoBufProperty.PropOptions[1].Name);
-  CheckEquals('"true value"', FProtoBufProperty.PropOptions[1].OptionValue);
+  CheckEquals('"true"" value"""', FProtoBufProperty.PropOptions[1].OptionValue);
   CheckEquals(' def field 1, default value 2', FProtoBufProperty.PropComment);
 
   iPos := 1;
@@ -225,19 +225,19 @@ begin
   CheckEquals(' def field 1, default value 2', FProtoBufProperty.PropComment);
 
   iPos := 1;
-  Proto := 'repeated   int32   DefField1  = 1  [default = Val2, packed = "true value" ]; // def field 1, default value 2';
+  Proto := 'repeated   string   DefField1  = 1  [default = "Va""l2" , packed = true ]; // def field 1, default value 2';
   // TODO: Setup method call parameters
   FProtoBufProperty.ParseFromProto(Proto, iPos);
   // TODO: Validate method results
   CheckTrue(ptRepeated = FProtoBufProperty.PropKind);
-  CheckEquals('int32', FProtoBufProperty.PropType);
+  CheckEquals('string', FProtoBufProperty.PropType);
   CheckEquals('DefField1', FProtoBufProperty.Name);
   CheckEquals(1, FProtoBufProperty.PropTag);
   CheckEquals(2, FProtoBufProperty.PropOptions.Count);
   CheckEquals('default', FProtoBufProperty.PropOptions[0].Name);
-  CheckEquals('Val2', FProtoBufProperty.PropOptions[0].OptionValue);
+  CheckEquals('"Va""l2"', FProtoBufProperty.PropOptions[0].OptionValue);
   CheckEquals('packed', FProtoBufProperty.PropOptions[1].Name);
-  CheckEquals('"true value"', FProtoBufProperty.PropOptions[1].OptionValue);
+  CheckEquals('true', FProtoBufProperty.PropOptions[1].OptionValue);
   CheckEquals(' def field 1, default value 2', FProtoBufProperty.PropComment);
 end;
 

@@ -92,15 +92,13 @@ begin
     'g1 = 1;'#13#10 + //
     'g2 = 2;'#13#10 + //
     '}'#13#10;
-  sProto:=sProto +//
-    'message TestMsg0 {}'#13#10;
   sProto:=sProto +
   'message TestMsg1 {' + #13#10 +
   '' + #13#10 +
     '// fields with defaults' + #13#10 +
     'optional int32   DefField1  = 1  [default = 2];' + #13#10 +
     'optional int64   DefField2  = 2  [default = -1];' + #13#10 +
-    'optional string  DefField3  = 3  [default = "yes it is"];' + #13#10 +
+    'optional string  DefField3  = 3  [default = "yes ""it is"];' + #13#10 +
     'optional double  DefField4  = 4  [default = 1.1];' + #13#10 +
     'optional bool    DefField5  = 5  [default = true];' + #13#10 +
     'optional EnumG0  DefField6  = 6  [default = g2];' + #13#10 +
@@ -115,14 +113,14 @@ begin
     'repeated int32    FieldArr1  = 40;' + #13#10 +
     'repeated int32    FieldArr2  = 41 [packed = true];' + #13#10 +
     'repeated string   FieldArr3  = 42;' + #13#10 +
-    'repeated Enum1    FieldArrE1 = 43;' + #13#10 +
     'repeated TestMsg0 FieldMArr2 = 44;' + #13#10 +
     '' + #13#10 +
     '// fields of imported types' + #13#10 +
-    'optional EnumGlobal             FieldImp2 = 51;' + #13#10 +
     '' + #13#10 +
     '// extensions 1000 to 1999;' + #13#10 +
     '}';
+    sProto:=sProto +//
+      'message TestMsg0 {}'#13#10;
     OutputDir:='c:\temp\';
     Proto.ParseFromProto(sProto, iPos);
     FProtoBufGenerator.Generate(Proto, OutputDir);

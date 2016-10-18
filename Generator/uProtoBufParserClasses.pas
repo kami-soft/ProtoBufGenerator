@@ -89,6 +89,8 @@ type
   TProtoBufMessage = class(TAbstractProtoBufParserContainer<TProtoBufProperty>)
   public
     procedure ParseFromProto(const Proto: string; var iPos: integer); override;
+
+    function HasPropertyOfType(const APropType: string): Boolean;
   end;
 
   TProtoBufEnumList = class(TObjectList<TProtoBufEnum>)
@@ -340,8 +342,10 @@ begin
     begin
       Inc(iPos);
       { TODO : Solve problem with double "" in the middle of string... }
-      FOptionValue := '"' + ReadAllTillChar(Proto, iPos, ['"']) + '"';
-      SkipRequiredChar(Proto, iPos, '"');
+      FOptionValue := Trim('"' + ReadAllTillChar(Proto, iPos, [',', ']', #13, #10]));
+      if not EndsStr('"', FOptionValue) then
+        raise EParserError.Create('no string escape in property '+ Name);
+      //SkipRequiredChar(Proto, iPos, '"');
     end;
 
   SkipWhitespaces(Proto, iPos);
@@ -449,6 +453,19 @@ end;
 
 { TProtoBufMessage }
 
+function TProtoBufMessage.HasPropertyOfType(const APropType: string): Boolean;
+var
+  i: integer;
+begin
+  Result := False;
+  for i := 0 to Count - 1 do
+    if Items[i].PropType = APropType then
+      begin
+        Result := True;
+        Break;
+      end;
+end;
+
 procedure TProtoBufMessage.ParseFromProto(const Proto: string; var iPos: integer);
 var
   Item: TProtoBufProperty;
@@ -549,6 +566,18 @@ begin
           end;
         end;
     end;
+
+  FProtoBufMessages.Sort(TComparer<TProtoBufMessage>.Construct(
+    function(const Left, Right: TProtoBufMessage): integer
+    begin
+      if Left.HasPropertyOfType(Right.Name) then
+        Result := 1
+      else
+        if Right.HasPropertyOfType(Left.Name) then
+          Result := -1
+        else
+          Result := 0;
+    end));
 end;
 
 { TProtoBufMessageList }
