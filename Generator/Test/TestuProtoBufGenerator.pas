@@ -36,6 +36,9 @@ type
   end;
 
 implementation
+uses
+  pbInput,
+  pbOutput;
 
 procedure TestTProtoBufGenerator.SetUp;
 begin
@@ -50,23 +53,27 @@ end;
 
 procedure TestTProtoBufGenerator.TestGenerate;
 var
-  Output: TStrings;
-  Proto: TProtoFile;
+  i: Integer;
+  sI32: integer;
 begin
   // TODO: Setup method call parameters
-  FProtoBufGenerator.Generate(Proto, Output);
+  i:=3;
+  sI32:=EncodeZigZag32(i);
+  i:=decodeZigZag32(sI32);
+  CheckEquals(3, i);
+
   // TODO: Validate method results
 end;
 
 procedure TestTProtoBufGenerator.TestGenerate1;
 var
-  Encoding: TEncoding;
-  OutputStream: TStream;
-  Proto: TProtoFile;
+  i: Int64;
+  sI64: Int64;
 begin
-  // TODO: Setup method call parameters
-  FProtoBufGenerator.Generate(Proto, OutputStream, Encoding);
-  // TODO: Validate method results
+  i:=3;
+  sI64:=EncodeZigZag64(i);
+  i:=decodeZigZag64(sI64);
+  CheckEquals(3, i);
 end;
 
 procedure TestTProtoBufGenerator.TestGenerate2;

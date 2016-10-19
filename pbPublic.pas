@@ -3,19 +3,19 @@ unit pbPublic;
 interface
 
 const
-  WIRETYPE_VARINT           = 0;
-  WIRETYPE_FIXED64          = 1;
+  WIRETYPE_VARINT = 0;
+  WIRETYPE_FIXED64 = 1;
   WIRETYPE_LENGTH_DELIMITED = 2;
-  WIRETYPE_START_GROUP      = 3;
-  WIRETYPE_END_GROUP        = 4;
-  WIRETYPE_FIXED32          = 5;
+  WIRETYPE_START_GROUP = 3;
+  WIRETYPE_END_GROUP = 4;
+  WIRETYPE_FIXED32 = 5;
 
   TAG_TYPE_BITS = 3;
   TAG_TYPE_MASK = (1 shl TAG_TYPE_BITS) - 1;
 
   RecursionLimit = 64;
 
-(* Given a tag value, determines the wire type (the lower 3 bits). *)
+  (* Given a tag value, determines the wire type (the lower 3 bits). *)
 function getTagWireType(tag: integer): integer;
 
 (* Given a tag value, determines the field number (the upper 29 bits). *)
@@ -42,4 +42,3 @@ begin
 end;
 
 end.
- 

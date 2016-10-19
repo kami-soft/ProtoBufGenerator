@@ -3,7 +3,10 @@ unit pbOutput;
 interface
 
 uses
-  Classes, StrBuffer, pbPublic;
+  Classes,
+  SysUtils,
+  StrBuffer,
+  pbPublic;
 
 type
 
@@ -52,20 +55,63 @@ type
     (* Write a boolean field, including tag. *)
     procedure writeBoolean(fieldNumber: integer; value: boolean);
     (* Write a string field, including tag. *)
-    procedure writeString(fieldNumber: integer; const value: AnsiString);
+    procedure writeString(fieldNumber: integer; const value: string);
     (* Write a message field, including tag. *)
     procedure writeMessage(fieldNumber: integer; const value: IpbMessage);
-    (*  Write a unsigned int32 field, including tag. *)
+    (* Write a unsigned int32 field, including tag. *)
     procedure writeUInt32(fieldNumber: integer; value: cardinal);
+
+    procedure writeSInt32(fieldNumber: integer; value: integer);
+    procedure writeSInt64(fieldNumber: integer; value: int64);
     (* Get serialized size *)
     function getSerializedSize: integer;
     (* Write to buffer *)
     procedure writeTo(buffer: TProtoBufOutput);
   end;
 
+function EncodeZigZag32(const A: LongInt): LongWord;
+function EncodeZigZag64(const A: int64): UInt64;
+
 implementation
 
-{$r-}
+{$R-}
+
+// returns SInt32 encoded to LongWord using 'ZigZag' encoding
+function EncodeZigZag32(const A: LongInt): LongWord;
+var
+  I: int64;
+begin
+  if A < 0 then
+    begin
+      // use Int64 value to negate A without overflow
+      I := A;
+      I := -I;
+      // encode ZigZag
+      Result := (LongWord(I) - 1) * 2 + 1
+    end
+  else
+    Result := LongWord(A) * 2;
+end;
+
+// returns SInt64 encoded to UInt64 using 'ZigZag' encoding
+function EncodeZigZag64(const A: int64): UInt64;
+var
+  I: UInt64;
+begin
+  if A < 0 then
+    begin
+      // use two's complement to negate A without overflow
+      I := not A;
+      Inc(I);
+      // encode ZigZag
+      Dec(I);
+      I := I * 2;
+      Inc(I);
+      Result := I;
+    end
+  else
+    Result := UInt64(A) * 2;
+end;
 
 { TProtoBuf }
 
@@ -102,7 +148,8 @@ begin
 end;
 
 procedure TProtoBufOutput.writeRawVarint32(value: integer);
-var b: shortint;
+var
+  b: shortint;
 begin
   repeat
     b := value and $7F;
@@ -114,7 +161,8 @@ begin
 end;
 
 procedure TProtoBufOutput.writeRawVarint64(value: int64);
-var b: shortint;
+var
+  b: shortint;
 begin
   repeat
     b := value and $7F;
@@ -137,7 +185,7 @@ begin
   writeRawData(@value, SizeOf(value));
 end;
 
-procedure TProtoBufOutput.writeFloat(fieldNumber: integer; value: Single);
+procedure TProtoBufOutput.writeFloat(fieldNumber: integer; value: single);
 begin
   writeTag(fieldNumber, WIRETYPE_FIXED32);
   writeRawData(@value, SizeOf(value));
@@ -167,11 +215,27 @@ begin
   writeRawVarint64(value);
 end;
 
-procedure TProtoBufOutput.writeString(fieldNumber: integer; const value: AnsiString);
+procedure TProtoBufOutput.writeSInt32(fieldNumber, value: integer);
+begin
+  writeTag(fieldNumber, WIRETYPE_VARINT);
+  writeRawVarint32(EncodeZigZag32(value));
+end;
+
+procedure TProtoBufOutput.writeSInt64(fieldNumber: integer; value: int64);
+begin
+  writeTag(fieldNumber, WIRETYPE_VARINT);
+  writeRawVarint64(EncodeZigZag64(value));
+end;
+
+procedure TProtoBufOutput.writeString(fieldNumber: integer; const value: string);
+var
+  Buf: TBytes;
 begin
   writeTag(fieldNumber, WIRETYPE_LENGTH_DELIMITED);
-  writeRawVarint32(length(value));
-  FBuffer.Add(value);
+  Buf := TEncoding.UTF8.GetBytes(value);
+  writeRawVarint32(length(Buf));
+  if length(Buf) > 0 then
+    FBuffer.Add(@Buf[0], length(Buf));
 end;
 
 procedure TProtoBufOutput.writeUInt32(fieldNumber: integer; value: cardinal);
@@ -180,8 +244,7 @@ begin
   writeRawVarint32(value);
 end;
 
-procedure TProtoBufOutput.writeMessage(fieldNumber: integer;
-  const value: IpbMessage);
+procedure TProtoBufOutput.writeMessage(fieldNumber: integer; const value: IpbMessage);
 begin
   writeTag(fieldNumber, WIRETYPE_LENGTH_DELIMITED);
   writeRawVarint32(value.getSerializedSize());
@@ -190,7 +253,7 @@ end;
 
 function TProtoBufOutput.GetText: AnsiString;
 begin
-  result := FBuffer.GetText;
+  Result := FBuffer.GetText;
 end;
 
 procedure TProtoBufOutput.SaveToFile(const FileName: string);
@@ -205,7 +268,7 @@ end;
 
 function TProtoBufOutput.getSerializedSize: integer;
 begin
-  result := FBuffer.GetCount;
+  Result := FBuffer.GetCount;
 end;
 
 procedure TProtoBufOutput.writeTo(buffer: TProtoBufOutput);

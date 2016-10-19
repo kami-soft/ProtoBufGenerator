@@ -305,7 +305,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
                   if not DelphiProp.isObject then
                     SL.Add(Format('            F%s.Add(T%s(ProtoBuf.readEnum));', [DelphiProp.PropertyName, Prop.PropType]))
                   else
-                    SL.Add(Format('            F%s.AddFromBuf(ProtoBuf);', [DelphiProp.PropertyName]));
+                    SL.Add(Format('            F%s.AddFromBuf(ProtoBuf, fieldNumber);', [DelphiProp.PropertyName]));
               end;
             SL.Add('          end;');
           end;
@@ -321,8 +321,59 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
   end;
 
   procedure WriteSaveProc(ProtoMsg: TProtoBufMessage; SL: TStrings);
+  var
+    i: integer;
+    Prop: TProtoBufProperty;
+    DelphiProp: TDelphiProperty;
   begin
+    SL.Add('');
+    SL.Add(Format('procedure T%s.SaveToBuf(ProtoBuf: TProtoBufOutput);', [ProtoMsg.Name]));
+    SL.Add('var');
+    SL.Add('  tmpBuf: TProtoBufOutput;');
+    SL.Add('  i: integer;');
+    SL.Add('begin');
+    for i := 0 to ProtoMsg.Count - 1 do
+      begin
+        Prop := ProtoMsg[i];
+        ParsePropType(Prop, Proto, DelphiProp);
 
+        if not DelphiProp.IsList then
+          begin
+            if not DelphiProp.isComplex then
+              SL.Add(Format('  ProtoBuf.write%s(%d, F%s);', [GetProtoBufMethodForScalarType(Prop.PropType), Prop.PropTag, DelphiProp.PropertyName]))
+            else
+              if not DelphiProp.isObject then
+                SL.Add(Format('  ProtoBuf.writeInt32(%d, integer(F%s));', [Prop.PropTag, DelphiProp.PropertyName]))
+              else
+                begin
+                  SL.Add('  tmpBuf:=TProtoBufOutput.Create;');
+                  SL.Add('  try');
+                  SL.Add(Format('    F%s.SaveToBuf(tmpBuf);', [DelphiProp.PropertyName]));
+                  SL.Add(Format('    ProtoBuf.writeMessage(%d, tmpBuf);', [Prop.PropTag]));
+                  SL.Add('  finally');
+                  SL.Add('    tmpBuf.Free;');
+                  SL.Add('  end;');
+                end;
+          end
+        else
+          begin
+            if not DelphiProp.isComplex then
+              begin
+                SL.Add(Format('  for i := 0 to F%s.Count-1 do', [DelphiProp.PropertyName]));
+                SL.Add(Format('    ProtoBuf.write%s(%d, F%s[i]);', [GetProtoBufMethodForScalarType(Prop.PropType), Prop.PropTag, DelphiProp.PropertyName]));
+              end
+            else
+              if not DelphiProp.isObject then
+                begin
+                  SL.Add(Format('  for i := 0 to F%s.Count-1 do', [DelphiProp.PropertyName]));
+                  SL.Add(Format('    ProtoBuf.writeInt32(%d, F%s[i]);', [Prop.PropTag, DelphiProp.PropertyName]));
+                end
+              else
+                SL.Add(Format('    F%s.SaveToBuf(ProtoBuf, %d);', [DelphiProp.PropertyName, Prop.PropTag]));
+          end;
+      end;
+
+    SL.Add('end;');
   end;
 
   procedure WriteMessageToSL(ProtoMsg: TProtoBufMessage; SL: TStrings);

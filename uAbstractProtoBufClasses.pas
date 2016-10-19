@@ -22,14 +22,12 @@ type
 
     procedure LoadFromBuf(ProtoBuf: TProtoBufInput); virtual; abstract;
     procedure SaveToBuf(ProtoBuf: TProtoBufOutput); virtual; abstract;
-
-    class function GetProtoBufTagValue: integer; virtual; abstract;
   end;
 
   TProtoBufClassList<T: TAbstractProtoBufClass, constructor> = class(TObjectList<T>)
   public
-    procedure AddFromBuf(ProtoBuf: TProtoBufInput);
-    procedure SaveToBuf(ProtoBuf: TProtoBufOutput);
+    procedure AddFromBuf(ProtoBuf: TProtoBufInput; TagValue: Integer);
+    procedure SaveToBuf(ProtoBuf: TProtoBufOutput; TagValue: Integer);
   end;
 
 implementation
@@ -91,19 +89,19 @@ end;
 
 { TProtoBufList<T> }
 
-procedure TProtoBufClassList<T>.AddFromBuf(ProtoBuf: TProtoBufInput);
+procedure TProtoBufClassList<T>.AddFromBuf(ProtoBuf: TProtoBufInput; TagValue: Integer);
 var
   tmpBuf: TProtoBufInput;
   Item: T;
 begin
-  ProtoBuf.checkLastTagWas(T.GetProtoBufTagValue);
-  tmpBuf:=ProtoBuf.ReadSubProtoBufInput;
+  ProtoBuf.checkLastTagWas(TagValue);
+  tmpBuf := ProtoBuf.ReadSubProtoBufInput;
   try
-    Item:=T.Create;
+    Item := T.Create;
     try
       Item.LoadFromBuf(tmpBuf);
       Add(Item);
-      Item:=nil;
+      Item := nil;
     finally
       Item.Free;
     end;
@@ -112,18 +110,18 @@ begin
   end;
 end;
 
-procedure TProtoBufClassList<T>.SaveToBuf(ProtoBuf: TProtoBufOutput);
+procedure TProtoBufClassList<T>.SaveToBuf(ProtoBuf: TProtoBufOutput; TagValue: Integer);
 var
   i: Integer;
   tmpBuf: TProtoBufOutput;
 begin
-  tmpBuf:=TProtoBufOutput.Create;
+  tmpBuf := TProtoBufOutput.Create;
   try
-    for i := 0 to Count-1 do
+    for i := 0 to Count - 1 do
       begin
         tmpBuf.Clear;
         Items[i].SaveToBuf(tmpBuf);
-        ProtoBuf.writeMessage(T.GetProtoBufTagValue, tmpBuf);
+        ProtoBuf.writeMessage(TagValue, tmpBuf);
       end;
   finally
     tmpBuf.Free;
