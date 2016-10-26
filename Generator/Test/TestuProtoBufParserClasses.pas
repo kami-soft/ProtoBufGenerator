@@ -157,7 +157,7 @@ begin
   // TODO: Setup method call parameters
   FProtoBufProperty.ParseFromProto(Proto, iPos);
   // TODO: Validate method results
-  CheckTrue(ptDefaultRequired = FProtoBufProperty.PropKind);
+  CheckTrue(ptDefaultOptional = FProtoBufProperty.PropKind);
   CheckEquals('int32', FProtoBufProperty.PropType);
   CheckEquals('DefField1', FProtoBufProperty.Name);
   CheckEquals(1, FProtoBufProperty.PropTag);
@@ -169,7 +169,7 @@ begin
   // TODO: Setup method call parameters
   FProtoBufProperty.ParseFromProto(Proto, iPos);
   // TODO: Validate method results
-  CheckTrue(ptDefaultRequired = FProtoBufProperty.PropKind);
+  CheckTrue(ptDefaultOptional = FProtoBufProperty.PropKind);
   CheckEquals('int32', FProtoBufProperty.PropType);
   CheckEquals('DefField1', FProtoBufProperty.Name);
   CheckEquals(1, FProtoBufProperty.PropTag);

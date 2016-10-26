@@ -25,7 +25,8 @@ uses
   pbOutput in '..\..\pbOutput.pas',
   pbPublic in '..\..\pbPublic.pas',
   StrBuffer in '..\..\StrBuffer.pas',
-  TestuProtoBufGenerator in 'TestuProtoBufGenerator.pas';
+  TestuProtoBufGenerator in 'TestuProtoBufGenerator.pas',
+  test1 in 'C:\Temp\test1.pas';
 
 {R *.RES}
 

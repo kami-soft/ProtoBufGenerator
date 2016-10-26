@@ -12,6 +12,15 @@ uses
 
 type
   TAbstractProtoBufClass = class(TObject)
+  strict private
+  type
+    TRequiredFields = TDictionary<integer, Boolean>;
+  strict private
+    FRequiredFields: TRequiredFields;
+  strict protected
+    procedure AddLoadedField(Tag: integer);
+    procedure RegisterRequiredField(Tag: integer);
+    function IsAllRequiredLoaded: Boolean;
   public
     constructor Create; virtual;
 
@@ -26,13 +35,19 @@ type
 
   TProtoBufClassList<T: TAbstractProtoBufClass, constructor> = class(TObjectList<T>)
   public
-    procedure AddFromBuf(ProtoBuf: TProtoBufInput; TagValue: Integer);
-    procedure SaveToBuf(ProtoBuf: TProtoBufOutput; TagValue: Integer);
+    procedure AddFromBuf(ProtoBuf: TProtoBufInput; TagValue: integer);
+    procedure SaveToBuf(ProtoBuf: TProtoBufOutput; TagValue: integer);
   end;
 
 implementation
 
 { TAbstractProtoBufClass }
+
+procedure TAbstractProtoBufClass.AddLoadedField(Tag: integer);
+begin
+  if FRequiredFields.ContainsKey(Tag) then
+    FRequiredFields[Tag] := True;
+end;
 
 procedure TAbstractProtoBufClass.Assign(ProtoBuf: TAbstractProtoBufClass);
 var
@@ -51,6 +66,19 @@ end;
 constructor TAbstractProtoBufClass.Create;
 begin
   inherited Create;
+end;
+
+function TAbstractProtoBufClass.IsAllRequiredLoaded: Boolean;
+var
+  b: Boolean;
+begin
+  Result := True;
+  for b in FRequiredFields.Values do
+    if not b then
+      begin
+        Result := False;
+        Break;
+      end;
 end;
 
 procedure TAbstractProtoBufClass.LoadFromStream(Stream: TStream);
@@ -74,6 +102,11 @@ begin
   end;
 end;
 
+procedure TAbstractProtoBufClass.RegisterRequiredField(Tag: integer);
+begin
+  FRequiredFields.Add(Tag, False);
+end;
+
 procedure TAbstractProtoBufClass.SaveToStream(Stream: TStream);
 var
   pb: TProtoBufOutput;
@@ -89,7 +122,7 @@ end;
 
 { TProtoBufList<T> }
 
-procedure TProtoBufClassList<T>.AddFromBuf(ProtoBuf: TProtoBufInput; TagValue: Integer);
+procedure TProtoBufClassList<T>.AddFromBuf(ProtoBuf: TProtoBufInput; TagValue: integer);
 var
   tmpBuf: TProtoBufInput;
   Item: T;
@@ -110,9 +143,9 @@ begin
   end;
 end;
 
-procedure TProtoBufClassList<T>.SaveToBuf(ProtoBuf: TProtoBufOutput; TagValue: Integer);
+procedure TProtoBufClassList<T>.SaveToBuf(ProtoBuf: TProtoBufOutput; TagValue: integer);
 var
-  i: Integer;
+  i: integer;
   tmpBuf: TProtoBufOutput;
 begin
   tmpBuf := TProtoBufOutput.Create;

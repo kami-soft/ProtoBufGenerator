@@ -10,7 +10,7 @@ uses
 
 type
   TPropKind = ( //
-    ptDefaultRequired, //
+    ptDefaultOptional, //
     ptRequired, //
     ptOptional, //
     ptRepeated, //
@@ -129,7 +129,7 @@ uses
 function PropKindToStr(APropKind: TPropKind): string;
 begin
   case APropKind of
-    ptDefaultRequired:
+    ptDefaultOptional:
       Result := '';
     ptRequired:
       Result := 'required';
@@ -299,7 +299,7 @@ begin
       SkipRequiredChar(Proto, iPos, ';');
       exit; // reserved is not supported now by this parser
     end;
-  if FPropKind <> ptDefaultRequired then // if required/optional/repeated is not skipped,
+  if FPropKind <> ptDefaultOptional then // if required/optional/repeated is not skipped,
     Buf := ReadWordFromBuf(Proto, iPos, []); // read type of property
 
   FPropType := Buf;

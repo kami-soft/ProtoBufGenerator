@@ -163,7 +163,9 @@ begin
     begin
       Prop := ProtoMsg[i];
       ParsePropType(Prop, Proto, DelphiProp);
-      Result := Result or DelphiProp.IsList or DelphiProp.isObject or Prop.PropOptions.HasValue['default'];
+      Result := (Prop.PropKind = ptRequired) or DelphiProp.IsList or DelphiProp.isObject or Prop.PropOptions.HasValue['default'];
+      if Result then
+        Break;
     end;
 end;
 
@@ -237,6 +239,8 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
           SL.Add(Format('  F%s := %s.Create;', [DelphiProp.PropertyName, DelphiProp.PropertyType]));
         if Prop.PropOptions.HasValue['default'] then
           SL.Add(Format('  F%s := %s;', [DelphiProp.PropertyName, ReQuoteStr(Prop.PropOptions.Value['default'])]));
+        if Prop.PropKind = ptRequired then
+          SL.Add(Format('  RegisterRequiredField(%d);', [Prop.PropTag]));
       end;
     SL.Add('end;');
 
@@ -315,8 +319,11 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
       end
     else
       SL.Add('      ProtoBuf.skipField(Tag);');
+    SL.Add('      AddLoadedField(Tag);');
     SL.Add('      Tag := ProtoBuf.readTag;');
     SL.Add('    end;');
+    SL.Add('  if not IsAllRequiredLoaded then');
+    SL.Add('    raise EStreamError.Create(''not enought fields'');');
     SL.Add('end;');
   end;
 
@@ -454,6 +461,8 @@ procedure TProtoBufGenerator.GenerateInterfaceSection(Proto: TProtoFile; SL: TSt
       begin
         Prop := ProtoMsg[i];
         ParsePropType(Prop, Proto, DelphiProp);
+        if Prop.PropComment <> '' then
+          SL.Add('//' + Prop.PropComment);
         s := Format('    property %s:%s read F%s', [DelphiProp.PropertyName, DelphiProp.PropertyType, DelphiProp.PropertyName]);
         if not(DelphiProp.IsList or DelphiProp.isObject) then
           s := s + Format(' write F%s', [DelphiProp.PropertyName]);
@@ -478,6 +487,7 @@ begin
   SL.Add('interface');
   SL.Add('');
   SL.Add('uses');
+  SL.Add('  System.Classes,');
   SL.Add('  System.Generics.Collections,');
   SL.Add('  pbInput,');
   SL.Add('  pbOutput,');
