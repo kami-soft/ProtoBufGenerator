@@ -26,7 +26,8 @@ uses
   pbPublic in '..\..\pbPublic.pas',
   StrBuffer in '..\..\StrBuffer.pas',
   TestuProtoBufGenerator in 'TestuProtoBufGenerator.pas',
-  test1 in 'C:\Temp\test1.pas';
+  test1 in 'Win32\Debug\test1.pas',
+  TestGeneratedProtoBufPas in 'TestGeneratedProtoBufPas.pas';
 
 {R *.RES}
 

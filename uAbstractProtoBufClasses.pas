@@ -23,6 +23,7 @@ type
     function IsAllRequiredLoaded: Boolean;
   public
     constructor Create; virtual;
+    destructor Destroy; override;
 
     procedure Assign(ProtoBuf: TAbstractProtoBufClass);
 
@@ -66,6 +67,13 @@ end;
 constructor TAbstractProtoBufClass.Create;
 begin
   inherited Create;
+  FRequiredFields:= TRequiredFields.Create;
+end;
+
+destructor TAbstractProtoBufClass.Destroy;
+begin
+  FreeAndNil(FRequiredFields);
+  inherited;
 end;
 
 function TAbstractProtoBufClass.IsAllRequiredLoaded: Boolean;

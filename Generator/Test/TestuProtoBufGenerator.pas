@@ -104,7 +104,7 @@ begin
   '' + #13#10 +
     '// fields with defaults' + #13#10 +
     'optional int32   DefField1  = 1  [default = 2];' + #13#10 +
-    'optional int64   DefField2  = 2  [default = -1];' + #13#10 +
+    'required int64   DefField2  = 2  [default = -1];' + #13#10 +
     'optional string  DefField3  = 3  [default = "yes ""it is"];' + #13#10 +
     'optional double  DefField4  = 4  [default = 1.1];' + #13#10 +
     'optional bool    DefField5  = 5  [default = true];' + #13#10 +
@@ -128,7 +128,7 @@ begin
     '}';
     sProto:=sProto +//
       'message TestMsg0 {}'#13#10;
-    OutputDir:='c:\temp\';
+    OutputDir:=ExtractFilePath(ParamStr(0));
     Proto.ParseFromProto(sProto, iPos);
     FProtoBufGenerator.Generate(Proto, OutputDir);
     // TODO: Validate method results
