@@ -3,10 +3,10 @@
         <ProjectGuid>{921B63F3-891F-4A55-BEF1-7A545FACE320}</ProjectGuid>
     </PropertyGroup>
     <ItemGroup>
-        <Projects Include="ProtoBufGenerator.dproj">
+        <Projects Include="Generator\ProtoBufGenerator.dproj">
             <Dependencies/>
         </Projects>
-        <Projects Include="Test\ProtoBufGeneratorTests.dproj">
+        <Projects Include="Generator\Test\ProtoBufGeneratorTests.dproj">
             <Dependencies/>
         </Projects>
     </ItemGroup>
@@ -18,22 +18,22 @@
         </BorlandProject>
     </ProjectExtensions>
     <Target Name="ProtoBufGenerator">
-        <MSBuild Projects="ProtoBufGenerator.dproj"/>
+        <MSBuild Projects="Generator\ProtoBufGenerator.dproj"/>
     </Target>
     <Target Name="ProtoBufGenerator:Clean">
-        <MSBuild Projects="ProtoBufGenerator.dproj" Targets="Clean"/>
+        <MSBuild Projects="Generator\ProtoBufGenerator.dproj" Targets="Clean"/>
     </Target>
     <Target Name="ProtoBufGenerator:Make">
-        <MSBuild Projects="ProtoBufGenerator.dproj" Targets="Make"/>
+        <MSBuild Projects="Generator\ProtoBufGenerator.dproj" Targets="Make"/>
     </Target>
     <Target Name="ProtoBufGeneratorTests">
-        <MSBuild Projects="Test\ProtoBufGeneratorTests.dproj"/>
+        <MSBuild Projects="Generator\Test\ProtoBufGeneratorTests.dproj"/>
     </Target>
     <Target Name="ProtoBufGeneratorTests:Clean">
-        <MSBuild Projects="Test\ProtoBufGeneratorTests.dproj" Targets="Clean"/>
+        <MSBuild Projects="Generator\Test\ProtoBufGeneratorTests.dproj" Targets="Clean"/>
     </Target>
     <Target Name="ProtoBufGeneratorTests:Make">
-        <MSBuild Projects="Test\ProtoBufGeneratorTests.dproj" Targets="Make"/>
+        <MSBuild Projects="Generator\Test\ProtoBufGeneratorTests.dproj" Targets="Make"/>
     </Target>
     <Target Name="Build">
         <CallTarget Targets="ProtoBufGenerator;ProtoBufGeneratorTests"/>

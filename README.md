@@ -23,3 +23,12 @@ Limitations:
 - ```import``` not supported (skip declaration)
 
 - field types `Any` and `OneOf` not supported
+
+## How to use
++ compile and run ProtoBufGenerator.exe
++ open .proto file by press "Open" button or drag&drop .proto file to main form
++ select directory for new generated .pas file
++ add generated file to your project
+
+Do not use LoadFromBuf/SaveToBuf methods in generated files!
+Use LoadFromStream and SaveToStream methods, which inherited from base class.
