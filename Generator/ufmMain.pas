@@ -3,11 +3,29 @@ unit ufmMain;
 interface
 
 uses
-  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs;
+  Winapi.Windows,
+  Winapi.Messages,
+  System.SysUtils,
+  System.Variants,
+  System.Classes,
+  Vcl.Graphics,
+  Vcl.Controls,
+  Vcl.Forms,
+  Vcl.Dialogs,
+  Vcl.StdCtrls,
+  Vcl.ExtCtrls;
 
 type
   TfmMain = class(TForm)
+    edProtoFileName: TEdit;
+    btnOpenProtoFile: TButton;
+    odProtoFile: TFileOpenDialog;
+    btnGenerate: TButton;
+    edOutputFolder: TEdit;
+    btnChooseOutputFolder: TButton;
+    procedure btnOpenProtoFileClick(Sender: TObject);
+    procedure btnChooseOutputFolderClick(Sender: TObject);
+    procedure btnGenerateClick(Sender: TObject);
   private
     { Private declarations }
   public
@@ -19,6 +37,37 @@ var
 
 implementation
 
+uses
+  Vcl.FileCtrl,
+  uProtoBufGenerator;
+
 {$R *.dfm}
+
+procedure TfmMain.btnChooseOutputFolderClick(Sender: TObject);
+var
+  Dir: string;
+begin
+  Dir := edOutputFolder.Text;
+  if SelectDirectory(Dir, [sdAllowCreate, sdPerformCreate], 0) then
+    edOutputFolder.Text := Dir;
+end;
+
+procedure TfmMain.btnGenerateClick(Sender: TObject);
+var
+  Gen: TProtoBufGenerator;
+begin
+  Gen:=TProtoBufGenerator.Create;
+  try
+    Gen.Generate(edProtoFileName.Text, edOutputFolder.Text, TEncoding.UTF8);
+  finally
+    Gen.Free;
+  end;
+end;
+
+procedure TfmMain.btnOpenProtoFileClick(Sender: TObject);
+begin
+  if odProtoFile.Execute then
+    edProtoFileName.Text := odProtoFile.FileName;
+end;
 
 end.

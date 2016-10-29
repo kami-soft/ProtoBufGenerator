@@ -18,6 +18,7 @@ type
     procedure Generate(Proto: TProtoFile; Output: TStrings); overload;
     procedure Generate(Proto: TProtoFile; OutputStream: TStream; Encoding: TEncoding = nil); overload;
     procedure Generate(Proto: TProtoFile; const OutputDir: string; Encoding: TEncoding = nil); overload;
+    procedure Generate(const InputFile: string; const OutputDir: string; Encoding: TEncoding = nil); overload;
   end;
 
 implementation
@@ -533,6 +534,28 @@ begin
       WriteMessageToSL(Proto.ProtoBufMessages[i], SL);
       SL.Add('');
     end;
+end;
+
+procedure TProtoBufGenerator.Generate(const InputFile, OutputDir: string; Encoding: TEncoding);
+var
+  Proto: TProtoFile;
+  SL: TStringList;
+  iPos: integer;
+begin
+  SL := TStringList.Create;
+  try
+    SL.LoadFromFile(InputFile);
+    Proto := TProtoFile.Create(nil);
+    try
+      iPos := 1;
+      Proto.ParseFromProto(SL.Text, iPos);
+      Generate(Proto, OutputDir, Encoding);
+    finally
+      Proto.Free;
+    end;
+  finally
+    SL.Free;
+  end;
 end;
 
 end.

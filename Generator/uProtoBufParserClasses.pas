@@ -251,7 +251,7 @@ begin
   if (Proto[iPos] = '/') and (Proto[iPos + 1] = '/') then
     begin
       Inc(iPos, 2);
-      Result := ReadAllToEOL(Proto, iPos);
+      Result := ReadAllToEOL(Proto, iPos)+' ';
     end
   else
     Result := '';

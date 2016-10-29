@@ -25,10 +25,13 @@ Limitations:
 - field types `Any` and `OneOf` not supported
 
 ## How to use
++ add root folder of this project to library path (Tools - Options - Delphi options - Library)
++ open ProtoBufGeneratorGroup.groupproj from root folder of this project
 + compile and run ProtoBufGenerator.exe
 + open .proto file by press "Open" button or drag&drop .proto file to main form
 + select directory for new generated .pas file
 + add generated file to your project
 
-Do not use LoadFromBuf/SaveToBuf methods in generated files!
+Do not use LoadFromBuf/SaveToBuf methods in generated classes!
+
 Use LoadFromStream and SaveToStream methods, which inherited from base class.
