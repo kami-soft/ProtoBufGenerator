@@ -60,7 +60,7 @@ type
     FPropComment: string;
     FPropOptions: TProtoBufPropOptions;
   public
-    constructor Create; override;
+    constructor Create(ARoot: TAbstractProtoBufParserItem); override;
     destructor Destroy; override;
 
     procedure ParseFromProto(const Proto: string; var iPos: integer); override;
@@ -108,8 +108,11 @@ type
     FProtoBufMessages: TProtoBufMessageList;
     FProtoBufEnums: TProtoBufEnumList;
   public
-    constructor Create; override;
+    constructor Create(ARoot: TAbstractProtoBufParserItem); override;
     destructor Destroy; override;
+
+    procedure ParseEnum(const Proto: string; var iPos: integer);
+    procedure ParseMessage(const Proto: string; var iPos: integer);
 
     procedure ParseFromProto(const Proto: string; var iPos: integer); override;
 
@@ -209,10 +212,10 @@ end;
 
 { TProtoBufProperty }
 
-constructor TProtoBufProperty.Create;
+constructor TProtoBufProperty.Create(ARoot: TAbstractProtoBufParserItem);
 begin
   inherited;
-  FPropOptions := TProtoBufPropOptions.Create;
+  FPropOptions := TProtoBufPropOptions.Create(ARoot);
 end;
 
 destructor TProtoBufProperty.Destroy;
@@ -344,8 +347,8 @@ begin
       { TODO : Solve problem with double "" in the middle of string... }
       FOptionValue := Trim('"' + ReadAllTillChar(Proto, iPos, [',', ']', #13, #10]));
       if not EndsStr('"', FOptionValue) then
-        raise EParserError.Create('no string escape in property '+ Name);
-      //SkipRequiredChar(Proto, iPos, '"');
+        raise EParserError.Create('no string escape in property ' + Name);
+      // SkipRequiredChar(Proto, iPos, '"');
     end;
 
   SkipWhitespaces(Proto, iPos);
@@ -390,7 +393,7 @@ begin
   SkipWhitespaces(Proto, iPos); // check for empty options
   while Proto[iPos] <> ']' do
     begin
-      Option := TProtoBufPropOption.Create;
+      Option := TProtoBufPropOption.Create(FRoot);
       try
         Option.ParseFromProto(Proto, iPos);
         Add(Option);
@@ -432,7 +435,7 @@ begin
   SkipAllComments(Proto, iPos);
   while Proto[iPos] <> '}' do
     begin
-      Item := TProtoBufEnumValue.Create;
+      Item := TProtoBufEnumValue.Create(FRoot);
       try
         Item.ParseFromProto(Proto, iPos);
         Add(Item);
@@ -483,7 +486,28 @@ begin
   SkipAllComments(Proto, iPos);
   while Proto[iPos] <> '}' do
     begin
-      Item := TProtoBufProperty.Create;
+      SkipAllComments(Proto, iPos);
+      SkipWhitespaces(Proto, iPos);
+      if PosEx('enum', Proto, iPos) = iPos then
+        begin
+          Inc(iPos, Length('enum'));
+          if FRoot is TProtoFile then
+            begin
+              TProtoFile(FRoot).ParseEnum(Proto, iPos);
+              Continue;
+            end;
+        end;
+      if PosEx('message', Proto, iPos) = iPos then
+        begin
+          Inc(iPos, Length('message'));
+          if FRoot is TProtoFile then
+            begin
+              TProtoFile(FRoot).ParseMessage(Proto, iPos);
+              Continue;
+            end;
+        end;
+
+      Item := TProtoBufProperty.Create(FRoot);
       try
         Item.ParseFromProto(Proto, iPos);
         Add(Item);
@@ -504,7 +528,7 @@ end;
 
 { TProtoFile }
 
-constructor TProtoFile.Create;
+constructor TProtoFile.Create(ARoot: TAbstractProtoBufParserItem);
 begin
   inherited;
   FProtoBufMessages := TProtoBufMessageList.Create;
@@ -518,11 +542,23 @@ begin
   inherited;
 end;
 
+procedure TProtoFile.ParseEnum(const Proto: string; var iPos: integer);
+var
+  Enum: TProtoBufEnum;
+begin
+  Enum := TProtoBufEnum.Create(Self);
+  try
+    Enum.ParseFromProto(Proto, iPos);
+    FProtoBufEnums.Add(Enum);
+    Enum := nil;
+  finally
+    Enum.Free;
+  end;
+end;
+
 procedure TProtoFile.ParseFromProto(const Proto: string; var iPos: integer);
 var
   Buf: string;
-  Enum: TProtoBufEnum;
-  Msg: TProtoBufMessage;
 begin
   // need skip comments,
   // parse .proto package name
@@ -543,28 +579,10 @@ begin
           SkipRequiredChar(Proto, iPos, ';');
         end;
       if Buf = 'enum' then
-        begin
-          Enum := TProtoBufEnum.Create;
-          try
-            Enum.ParseFromProto(Proto, iPos);
-            FProtoBufEnums.Add(Enum);
-            Enum := nil;
-          finally
-            Enum.Free;
-          end;
-        end;
+        ParseEnum(Proto, iPos);
 
       if Buf = 'message' then
-        begin
-          Msg := TProtoBufMessage.Create;
-          try
-            Msg.ParseFromProto(Proto, iPos);
-            FProtoBufMessages.Add(Msg);
-            Msg := nil;
-          finally
-            Msg.Free;
-          end;
-        end;
+        ParseMessage(Proto, iPos);
     end;
 
   FProtoBufMessages.Sort(TComparer<TProtoBufMessage>.Construct(
@@ -578,6 +596,20 @@ begin
         else
           Result := 0;
     end));
+end;
+
+procedure TProtoFile.ParseMessage(const Proto: string; var iPos: integer);
+var
+  Msg: TProtoBufMessage;
+begin
+  Msg := TProtoBufMessage.Create(Self);
+  try
+    Msg.ParseFromProto(Proto, iPos);
+    FProtoBufMessages.Add(Msg);
+    Msg := nil;
+  finally
+    Msg.Free;
+  end;
 end;
 
 { TProtoBufMessageList }

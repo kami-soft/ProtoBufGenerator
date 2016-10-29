@@ -29,6 +29,16 @@ type
 
   end;
 
+  TNestedMsg0 = class(TAbstractProtoBufClass)
+  strict private
+    FNestedField1: integer;
+  public
+    procedure LoadFromBuf(ProtoBuf: TProtoBufInput); override;
+    procedure SaveToBuf(ProtoBuf: TProtoBufOutput); override;
+
+    property NestedField1:integer read FNestedField1 write FNestedField1;
+  end;
+
   TTestMsg1 = class(TAbstractProtoBufClass)
   strict private
     FDefField1: integer;
@@ -44,7 +54,7 @@ type
     FFieldArr1List: TList<integer>;
     FFieldArr2List: TList<integer>;
     FFieldArr3List: TList<string>;
-    FFieldMArr2List: TProtoBufClassList<TTestMsg0>;
+    FFieldMArr2List: TProtoBufClassList<TNestedMsg0>;
   public
     constructor Create; override;
     destructor Destroy; override;
@@ -60,7 +70,6 @@ type
     property DefField6:TEnumG0 read FDefField6 write FDefField6 default g2;
     property DefField7:Int64 read FDefField7 write FDefField7 default 100;
     property DefField8:integer read FDefField8 write FDefField8 default 1;
-// field of message type
     property DefField9:Single read FDefField9 write FDefField9; // default 1.23e1;
 // repeated fields
     property FieldMsg1:TTestMsg0 read FFieldMsg1;
@@ -68,7 +77,7 @@ type
     property FieldArr2List:TList<integer> read FFieldArr2List;
     property FieldArr3List:TList<string> read FFieldArr3List;
 // fields of imported types
-    property FieldMArr2List:TProtoBufClassList<TTestMsg0> read FFieldMArr2List;
+    property FieldMArr2List:TProtoBufClassList<TNestedMsg0> read FFieldMArr2List;
   end;
 
 
@@ -100,6 +109,40 @@ begin
 end;
 
 
+procedure TNestedMsg0.LoadFromBuf(ProtoBuf: TProtoBufInput);
+var
+  fieldNumber: integer;
+  Tag: integer;
+  tmpBuf: TProtoBufInput;
+begin
+  Tag := ProtoBuf.readTag;
+  while Tag <> 0 do
+    begin
+      fieldNumber := getTagFieldNumber(Tag);
+      case fieldNumber of
+        1:
+          begin
+            FNestedField1 := ProtoBuf.readInt32;
+          end;
+      else
+        ProtoBuf.skipField(Tag);
+      end;
+      AddLoadedField(fieldNumber);
+      Tag := ProtoBuf.readTag;
+    end;
+  if not IsAllRequiredLoaded then
+    raise EStreamError.Create('not enought fields');
+end;
+
+procedure TNestedMsg0.SaveToBuf(ProtoBuf: TProtoBufOutput);
+var
+  tmpBuf: TProtoBufOutput;
+  i: integer;
+begin
+  ProtoBuf.writeInt32(1, FNestedField1);
+end;
+
+
 constructor TTestMsg1.Create;
 begin
   inherited;
@@ -117,7 +160,7 @@ begin
   FFieldArr1List := TList<integer>.Create;
   FFieldArr2List := TList<integer>.Create;
   FFieldArr3List := TList<string>.Create;
-  FFieldMArr2List := TProtoBufClassList<TTestMsg0>.Create;
+  FFieldMArr2List := TProtoBufClassList<TNestedMsg0>.Create;
 end;
 
 destructor TTestMsg1.Destroy;

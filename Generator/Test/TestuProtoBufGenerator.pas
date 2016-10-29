@@ -84,7 +84,7 @@ var
   sProto: string;
 begin
   // TODO: Setup method call parameters
-  Proto := TProtoFile.Create;
+  Proto := TProtoFile.Create(nil);
   try
     iPos := 1;
     sProto := '//   * Bytes type e.g. optional bytes   DefField10 = 10 [default = "123"];'#13#10 + //
@@ -113,6 +113,8 @@ begin
     'optional fixed32 DefField8  = 8  [default = 1];' + #13#10 +
     'optional float   DefField9  = 9  [default = 1.23e1];' + #13#10 +
     '' + #13#10 +
+    'message NestedMsg0 { '#13#10+
+    '    optional int32 NestedField1 = 1; }'+
     '// field of message type' + #13#10 +
     'optional TestMsg0 FieldMsg1  = 20;' + #13#10 +
     '' + #13#10 +
@@ -120,7 +122,7 @@ begin
     'repeated int32    FieldArr1  = 40;' + #13#10 +
     'repeated int32    FieldArr2  = 41 [packed = true];' + #13#10 +
     'repeated string   FieldArr3  = 42;' + #13#10 +
-    'repeated TestMsg0 FieldMArr2 = 44;' + #13#10 +
+    'repeated NestedMsg0 FieldMArr2 = 44;' + #13#10 +
     '' + #13#10 +
     '// fields of imported types' + #13#10 +
     '' + #13#10 +
