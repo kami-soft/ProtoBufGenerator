@@ -27,7 +27,8 @@ uses
   StrBuffer in '..\..\StrBuffer.pas',
   TestuProtoBufGenerator in 'TestuProtoBufGenerator.pas',
   test1 in 'Win32\Debug\test1.pas',
-  TestGeneratedProtoBufPas in 'TestGeneratedProtoBufPas.pas';
+  TestGeneratedProtoBufPas in 'TestGeneratedProtoBufPas.pas',
+  test2 in 'Win32\Debug\test2.pas';
 
 {R *.RES}
 

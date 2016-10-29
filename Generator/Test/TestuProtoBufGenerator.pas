@@ -33,6 +33,7 @@ type
     procedure TestGenerate;
     procedure TestGenerate1;
     procedure TestGenerate2;
+    procedure TestGenerateMsgWithBytes;
   end;
 
 implementation
@@ -112,6 +113,70 @@ begin
     'optional sint64  DefField7  = 7  [default = 100];' + #13#10 +
     'optional fixed32 DefField8  = 8  [default = 1];' + #13#10 +
     'optional float   DefField9  = 9  [default = 1.23e1];' + #13#10 +
+    '' + #13#10 +
+    'message NestedMsg0 { '#13#10+
+    '    optional int32 NestedField1 = 1; }'+
+    '// field of message type' + #13#10 +
+    'optional TestMsg0 FieldMsg1  = 20;' + #13#10 +
+    '' + #13#10 +
+    '// repeated fields' + #13#10 +
+    'repeated int32    FieldArr1  = 40;' + #13#10 +
+    'repeated int32    FieldArr2  = 41 [packed = true];' + #13#10 +
+    'repeated string   FieldArr3  = 42;' + #13#10 +
+    'repeated NestedMsg0 FieldMArr2 = 44;' + #13#10 +
+    '' + #13#10 +
+    '// fields of imported types' + #13#10 +
+    '' + #13#10 +
+    '// extensions 1000 to 1999;' + #13#10 +
+    '}';
+    sProto:=sProto +//
+      'message TestMsg0 {}'#13#10;
+    OutputDir:=ExtractFilePath(ParamStr(0));
+    Proto.ParseFromProto(sProto, iPos);
+    FProtoBufGenerator.Generate(Proto, OutputDir);
+    // TODO: Validate method results
+  finally
+    Proto.Free;
+  end;
+end;
+
+procedure TestTProtoBufGenerator.TestGenerateMsgWithBytes;
+var
+  OutputDir: string;
+  Proto: TProtoFile;
+  iPos: Integer;
+  sProto: string;
+begin
+  // TODO: Setup method call parameters
+  Proto := TProtoFile.Create(nil);
+  try
+    iPos := 1;
+    sProto := '//   * Bytes type e.g. optional bytes   DefField10 = 10 [default = "123"];'#13#10 + //
+    #13#10 + //
+    'package test2;'#13#10 + //
+    #13#10 + //
+    'import "TestImport1.proto";'#13#10 + //
+    #13#10 + //
+    '// enumeration'#13#10 + //
+    'enum EnumG0 {'#13#10 + //
+    '  // enum value 1'#13#10+
+    'g1 = 1;'#13#10 + //
+    'g2 = 2;'#13#10 + //
+    '}'#13#10;
+  sProto:=sProto +
+  'message TestMsg1 {' + #13#10 +
+  '' + #13#10 +
+    '// fields with defaults' + #13#10 +
+    'optional int32   DefField1  = 1  [default = 2];' + #13#10 +
+    'required int64   DefField2  = 2  [default = -1];' + #13#10 +
+    'optional string  DefField3  = 3  [default = "yes ""it is"];' + #13#10 +
+    'optional double  DefField4  = 4  [default = 1.1];' + #13#10 +
+    'optional bool    DefField5  = 5  [default = true];' + #13#10 +
+    'optional EnumG0  DefField6  = 6  [default = g2];' + #13#10 +
+    'optional sint64  DefField7  = 7  [default = 100];' + #13#10 +
+    'optional fixed32 DefField8  = 8  [default = 1];' + #13#10 +
+    'optional float   DefField9  = 9  [default = 1.23e1];' + #13#10 +
+    'optional bytes   DefField10  = 10;' + #13#10 +
     '' + #13#10 +
     'message NestedMsg0 { '#13#10+
     '    optional int32 NestedField1 = 1; }'+

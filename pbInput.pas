@@ -79,6 +79,8 @@ type
     function readBoolean: boolean;
     // Read a AnsiString field value
     function readString: string;
+    // read bytes field value
+    function readBytes: TBytes;
     // Read nested message
     procedure readMessage(builder: IBuilder; extensionRegistry: IExtensionRegistry);
     // Read a uint32 field value
@@ -242,6 +244,18 @@ end;
 function TProtoBufInput.readBoolean: boolean;
 begin
   result := readRawVarint32 <> 0;
+end;
+
+function TProtoBufInput.readBytes: TBytes;
+var
+  size: integer;
+begin
+  size := readRawVarint32;
+  Assert(size >= 0, ProtoBufException + 'readBytes (size < 0)');
+  SetLength(result, size);
+  if size > 0 then
+    Move(Pointer(FBuffer + FPos)^, result[0], size);
+  Inc(FPos, size);
 end;
 
 function TProtoBufInput.readString: string;

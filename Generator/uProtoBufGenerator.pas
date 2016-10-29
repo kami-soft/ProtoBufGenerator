@@ -103,7 +103,7 @@ begin
     sptString:
       Result := 'String';
     sptBytes:
-      Result := '';
+      Result := 'Bytes';
   end;
 end;
 
@@ -167,6 +167,19 @@ begin
       if Result then
         Break;
     end;
+end;
+
+function MsgContainsRepeatedFields(ProtoMsg: TProtoBufMessage): Boolean;
+var
+  i: integer;
+begin
+  Result := False;
+  for i := 0 to ProtoMsg.Count - 1 do
+    if ProtoMsg[i].PropKind = TPropKind.ptRepeated then
+      begin
+        Result := True;
+        Break;
+      end;
 end;
 
 { TProtoBufGenerator }
@@ -269,14 +282,15 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
     SL.Add('var');
     SL.Add('  fieldNumber: integer;');
     SL.Add('  Tag: integer;');
-    SL.Add('  tmpBuf: TProtoBufInput;');
+    if MsgNeedConstructor(ProtoMsg, Proto) then
+      SL.Add('  tmpBuf: TProtoBufInput;'); // avoid compiler hint
     SL.Add('begin');
     SL.Add('  Tag := ProtoBuf.readTag;');
     SL.Add('  while Tag <> 0 do');
     SL.Add('    begin');
+    SL.Add('      fieldNumber := getTagFieldNumber(Tag);');
     if ProtoMsg.Count > 0 then
       begin
-        SL.Add('      fieldNumber := getTagFieldNumber(Tag);');
         SL.Add('      case fieldNumber of');
         for i := 0 to ProtoMsg.Count - 1 do
           begin
@@ -335,9 +349,14 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
   begin
     SL.Add('');
     SL.Add(Format('procedure T%s.SaveToBuf(ProtoBuf: TProtoBufOutput);', [ProtoMsg.Name]));
-    SL.Add('var');
-    SL.Add('  tmpBuf: TProtoBufOutput;');
-    SL.Add('  i: integer;');
+    if MsgNeedConstructor(ProtoMsg, Proto) or MsgContainsRepeatedFields(ProtoMsg) then // avoid compiler hints
+      begin
+        SL.Add('var');
+        if MsgNeedConstructor(ProtoMsg, Proto) then
+          SL.Add('  tmpBuf: TProtoBufOutput;');
+        if MsgContainsRepeatedFields(ProtoMsg) then
+          SL.Add('  i: integer;');
+      end;
     SL.Add('begin');
     for i := 0 to ProtoMsg.Count - 1 do
       begin
@@ -492,6 +511,7 @@ begin
   SL.Add('//             kami-soft 2016');
   SL.Add('// ***********************************');
   SL.Add('uses');
+  SL.Add('  System.SysUtils,');
   SL.Add('  System.Classes,');
   SL.Add('  System.Generics.Collections,');
   SL.Add('  pbInput,');

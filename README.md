@@ -9,14 +9,16 @@ Planned main features:
 - cross-platform(???) realization
 
 Limitations:
-- nested routines are not supported. You can`t use something like
+~~- nested routines are not supported. You can`t use something like
   ```protobuf
     message SampleLevel1 {
       required int32 Foo = 1;
       message SampleLevel2 {
       ...
    ```
-    
+~~
+now nested routines are supported
+
 - no comments in the middle of declaration:
   ```protobuf
   // this is correct
@@ -26,3 +28,5 @@ Limitations:
       sint32 Foo = 1;
     optional string FooString = 2; // this is correct
      ```
+
+- ```import``` not supported (skip declaration)
