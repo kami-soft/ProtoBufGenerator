@@ -21,8 +21,8 @@ Limitations:
      ```
 
 - ```import``` not supported (skip declaration)
-
 - field types `Any` and `OneOf` not supported
+- `extend` and `extensions` not supported
 
 ## How to use
 + add root folder of this project to library path (Tools - Options - Delphi options - Library)

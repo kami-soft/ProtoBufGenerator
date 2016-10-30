@@ -21,6 +21,9 @@ type
     procedure AddLoadedField(Tag: integer);
     procedure RegisterRequiredField(Tag: integer);
     function IsAllRequiredLoaded: Boolean;
+
+    function LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer): Boolean; virtual;
+    procedure SaveFieldsToBuf(ProtoBuf: TProtoBufOutput); virtual; abstract;
   public
     constructor Create; virtual;
     destructor Destroy; override;
@@ -30,8 +33,8 @@ type
     procedure LoadFromStream(Stream: TStream);
     procedure SaveToStream(Stream: TStream);
 
-    procedure LoadFromBuf(ProtoBuf: TProtoBufInput); virtual; abstract;
-    procedure SaveToBuf(ProtoBuf: TProtoBufOutput); virtual; abstract;
+    procedure LoadFromBuf(ProtoBuf: TProtoBufInput);
+    procedure SaveToBuf(ProtoBuf: TProtoBufOutput);
   end;
 
   TProtoBufClassList<T: TAbstractProtoBufClass, constructor> = class(TObjectList<T>)
@@ -41,6 +44,9 @@ type
   end;
 
 implementation
+
+uses
+  pbPublic;
 
 { TAbstractProtoBufClass }
 
@@ -67,7 +73,7 @@ end;
 constructor TAbstractProtoBufClass.Create;
 begin
   inherited Create;
-  FRequiredFields:= TRequiredFields.Create;
+  FRequiredFields := TRequiredFields.Create;
 end;
 
 destructor TAbstractProtoBufClass.Destroy;
@@ -87,6 +93,25 @@ begin
         Result := False;
         Break;
       end;
+end;
+
+procedure TAbstractProtoBufClass.LoadFromBuf(ProtoBuf: TProtoBufInput);
+var
+  FieldNumber: integer;
+  Tag: integer;
+begin
+  Tag := ProtoBuf.readTag;
+  while Tag <> 0 do
+    begin
+      FieldNumber := getTagFieldNumber(Tag);
+      if not LoadSingleFieldFromBuf(ProtoBuf, FieldNumber) then
+        ProtoBuf.skipField(Tag)
+      else
+        AddLoadedField(FieldNumber);
+      Tag := ProtoBuf.readTag;
+    end;
+  if not IsAllRequiredLoaded then
+    raise EStreamError.Create('not enought fields');
 end;
 
 procedure TAbstractProtoBufClass.LoadFromStream(Stream: TStream);
@@ -110,9 +135,19 @@ begin
   end;
 end;
 
+function TAbstractProtoBufClass.LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer): Boolean;
+begin
+  Result := False;
+end;
+
 procedure TAbstractProtoBufClass.RegisterRequiredField(Tag: integer);
 begin
   FRequiredFields.Add(Tag, False);
+end;
+
+procedure TAbstractProtoBufClass.SaveToBuf(ProtoBuf: TProtoBufOutput);
+begin
+  SaveFieldsToBuf(ProtoBuf);
 end;
 
 procedure TAbstractProtoBufClass.SaveToStream(Stream: TStream);

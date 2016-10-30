@@ -48,7 +48,7 @@ var
   Dir: string;
 begin
   Dir := edOutputFolder.Text;
-  if SelectDirectory(Dir, [sdAllowCreate, sdPerformCreate], 0) then
+  if SelectDirectory('Select output directory', '', Dir, [sdNewFolder, sdShowShares, sdNewUI, sdValidateDir], nil) then
     edOutputFolder.Text := Dir;
 end;
 

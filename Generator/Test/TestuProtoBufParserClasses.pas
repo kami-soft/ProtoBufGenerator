@@ -114,6 +114,8 @@ type
   end;
 
 implementation
+uses
+  System.SysUtils;
 
 procedure TestTProtoBufPropOption.SetUp;
 begin
@@ -191,7 +193,7 @@ begin
   CheckEquals('Val2', FProtoBufProperty.PropOptions[0].OptionValue);
   CheckEquals('packed', FProtoBufProperty.PropOptions[1].Name);
   CheckEquals('true', FProtoBufProperty.PropOptions[1].OptionValue);
-  CheckEquals(' def field 1, default value 2', FProtoBufProperty.PropComment);
+  CheckEquals('def field 1, default value 2', Trim(FProtoBufProperty.PropComment));
 
   iPos := 1;
   Proto := 'optional int32   DefField1  = 1  [default = Val2, packed = "true"" value"""'#13#10' ]; // def field 1, default value 2';
@@ -207,7 +209,7 @@ begin
   CheckEquals('Val2', FProtoBufProperty.PropOptions[0].OptionValue);
   CheckEquals('packed', FProtoBufProperty.PropOptions[1].Name);
   CheckEquals('"true"" value"""', FProtoBufProperty.PropOptions[1].OptionValue);
-  CheckEquals(' def field 1, default value 2', FProtoBufProperty.PropComment);
+  CheckEquals('def field 1, default value 2', Trim(FProtoBufProperty.PropComment));
 
   iPos := 1;
   Proto := 'required   int32   DefField1  = 1  [default = Val2, packed = "true value" ]; // def field 1, default value 2';
@@ -223,7 +225,7 @@ begin
   CheckEquals('Val2', FProtoBufProperty.PropOptions[0].OptionValue);
   CheckEquals('packed', FProtoBufProperty.PropOptions[1].Name);
   CheckEquals('"true value"', FProtoBufProperty.PropOptions[1].OptionValue);
-  CheckEquals(' def field 1, default value 2', FProtoBufProperty.PropComment);
+  CheckEquals('def field 1, default value 2', Trim(FProtoBufProperty.PropComment));
 
   iPos := 1;
   Proto := 'repeated   string   DefField1  = 1  [default = "Va""l2" , packed = true ]; // def field 1, default value 2';
@@ -239,7 +241,7 @@ begin
   CheckEquals('"Va""l2"', FProtoBufProperty.PropOptions[0].OptionValue);
   CheckEquals('packed', FProtoBufProperty.PropOptions[1].Name);
   CheckEquals('true', FProtoBufProperty.PropOptions[1].OptionValue);
-  CheckEquals(' def field 1, default value 2', FProtoBufProperty.PropComment);
+  CheckEquals('def field 1, default value 2', Trim(FProtoBufProperty.PropComment));
 end;
 
 procedure TestTProtoBufEnumValue.SetUp;
@@ -488,6 +490,7 @@ begin
     'g2 = 2;'#13#10 + //
     '};';
   iPos := 1;
+  FProtoFile.FileName:=ChangeFileExt(ParamStr(0), '.proto');
   FProtoFile.ParseFromProto(Proto, iPos);
 
   CheckEquals('test1', FProtoFile.Name);

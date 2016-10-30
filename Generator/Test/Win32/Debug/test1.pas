@@ -24,18 +24,20 @@ type
 
   TTestMsg0 = class(TAbstractProtoBufClass)
   strict private
+  strict protected
+    function LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer): Boolean; override;
+    procedure SaveFieldsToBuf(ProtoBuf: TProtoBufOutput); override;
   public
-    procedure LoadFromBuf(ProtoBuf: TProtoBufInput); override;
-    procedure SaveToBuf(ProtoBuf: TProtoBufOutput); override;
 
   end;
 
   TNestedMsg0 = class(TAbstractProtoBufClass)
   strict private
     FNestedField1: integer;
+  strict protected
+    function LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer): Boolean; override;
+    procedure SaveFieldsToBuf(ProtoBuf: TProtoBufOutput); override;
   public
-    procedure LoadFromBuf(ProtoBuf: TProtoBufInput); override;
-    procedure SaveToBuf(ProtoBuf: TProtoBufOutput); override;
 
     property NestedField1:integer read FNestedField1 write FNestedField1;
   end;
@@ -56,12 +58,13 @@ type
     FFieldArr2List: TList<integer>;
     FFieldArr3List: TList<string>;
     FFieldMArr2List: TProtoBufClassList<TNestedMsg0>;
+  strict protected
+    function LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer): Boolean; override;
+    procedure SaveFieldsToBuf(ProtoBuf: TProtoBufOutput); override;
   public
     constructor Create; override;
     destructor Destroy; override;
 
-    procedure LoadFromBuf(ProtoBuf: TProtoBufInput); override;
-    procedure SaveToBuf(ProtoBuf: TProtoBufOutput); override;
 
     property DefField1:integer read FDefField1 write FDefField1 default 2;
     property DefField2:Int64 read FDefField2 write FDefField2 default -1;
@@ -72,12 +75,12 @@ type
     property DefField7:Int64 read FDefField7 write FDefField7 default 100;
     property DefField8:integer read FDefField8 write FDefField8 default 1;
     property DefField9:Single read FDefField9 write FDefField9; // default 1.23e1;
-// repeated fields
+// repeated fields 
     property FieldMsg1:TTestMsg0 read FFieldMsg1;
     property FieldArr1List:TList<integer> read FFieldArr1List;
     property FieldArr2List:TList<integer> read FFieldArr2List;
     property FieldArr3List:TList<string> read FFieldArr3List;
-// fields of imported types
+// fields of imported types 
     property FieldMArr2List:TProtoBufClassList<TNestedMsg0> read FFieldMArr2List;
   end;
 
@@ -85,54 +88,34 @@ type
 implementation
 
 
-procedure TTestMsg0.LoadFromBuf(ProtoBuf: TProtoBufInput);
-var
-  fieldNumber: integer;
-  Tag: integer;
+function TTestMsg0.LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer): Boolean;
 begin
-  Tag := ProtoBuf.readTag;
-  while Tag <> 0 do
-    begin
-      fieldNumber := getTagFieldNumber(Tag);
-      ProtoBuf.skipField(Tag);
-      AddLoadedField(fieldNumber);
-      Tag := ProtoBuf.readTag;
-    end;
-  if not IsAllRequiredLoaded then
-    raise EStreamError.Create('not enought fields');
+  Result := inherited LoadSingleFieldFromBuf(ProtoBuf, FieldNumber);
 end;
 
-procedure TTestMsg0.SaveToBuf(ProtoBuf: TProtoBufOutput);
+procedure TTestMsg0.SaveFieldsToBuf(ProtoBuf: TProtoBufOutput);
 begin
+  inherited;
 end;
 
 
-procedure TNestedMsg0.LoadFromBuf(ProtoBuf: TProtoBufInput);
-var
-  fieldNumber: integer;
-  Tag: integer;
+function TNestedMsg0.LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer): Boolean;
 begin
-  Tag := ProtoBuf.readTag;
-  while Tag <> 0 do
-    begin
-      fieldNumber := getTagFieldNumber(Tag);
-      case fieldNumber of
-        1:
-          begin
-            FNestedField1 := ProtoBuf.readInt32;
-          end;
-      else
-        ProtoBuf.skipField(Tag);
+  Result := inherited LoadSingleFieldFromBuf(ProtoBuf, FieldNumber);
+  if Result then
+    exit;
+  case fieldNumber of
+    1:
+      begin
+        FNestedField1 := ProtoBuf.readInt32;
+        Result := True;
       end;
-      AddLoadedField(fieldNumber);
-      Tag := ProtoBuf.readTag;
-    end;
-  if not IsAllRequiredLoaded then
-    raise EStreamError.Create('not enought fields');
+  end;
 end;
 
-procedure TNestedMsg0.SaveToBuf(ProtoBuf: TProtoBufOutput);
+procedure TNestedMsg0.SaveFieldsToBuf(ProtoBuf: TProtoBufOutput);
 begin
+  inherited;
   ProtoBuf.writeInt32(1, FNestedField1);
 end;
 
@@ -167,93 +150,98 @@ begin
   inherited;
 end;
 
-procedure TTestMsg1.LoadFromBuf(ProtoBuf: TProtoBufInput);
+function TTestMsg1.LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer): Boolean;
 var
-  fieldNumber: integer;
-  Tag: integer;
   tmpBuf: TProtoBufInput;
 begin
-  Tag := ProtoBuf.readTag;
-  while Tag <> 0 do
-    begin
-      fieldNumber := getTagFieldNumber(Tag);
-      case fieldNumber of
-        1:
-          begin
-            FDefField1 := ProtoBuf.readInt32;
-          end;
-        2:
-          begin
-            FDefField2 := ProtoBuf.readInt64;
-          end;
-        3:
-          begin
-            FDefField3 := ProtoBuf.readString;
-          end;
-        4:
-          begin
-            FDefField4 := ProtoBuf.readDouble;
-          end;
-        5:
-          begin
-            FDefField5 := ProtoBuf.readBoolean;
-          end;
-        6:
-          begin
-            FDefField6 := TEnumG0(ProtoBuf.readEnum);
-          end;
-        7:
-          begin
-            FDefField7 := ProtoBuf.readSInt64;
-          end;
-        8:
-          begin
-            FDefField8 := ProtoBuf.readFixed32;
-          end;
-        9:
-          begin
-            FDefField9 := ProtoBuf.readFloat;
-          end;
-        20:
-          begin
-            tmpBuf := ProtoBuf.ReadSubProtoBufInput;
-            try
-              FFieldMsg1.LoadFromBuf(tmpBuf);
-            finally
-              tmpBuf.Free;
-            end;
-          end;
-        40:
-          begin
-            FFieldArr1List.Add(ProtoBuf.readInt32);
-          end;
-        41:
-          begin
-            FFieldArr2List.Add(ProtoBuf.readInt32);
-          end;
-        42:
-          begin
-            FFieldArr3List.Add(ProtoBuf.readString);
-          end;
-        44:
-          begin
-            FFieldMArr2List.AddFromBuf(ProtoBuf, fieldNumber);
-          end;
-      else
-        ProtoBuf.skipField(Tag);
+  Result := inherited LoadSingleFieldFromBuf(ProtoBuf, FieldNumber);
+  if Result then
+    exit;
+  case fieldNumber of
+    1:
+      begin
+        FDefField1 := ProtoBuf.readInt32;
+        Result := True;
       end;
-      AddLoadedField(fieldNumber);
-      Tag := ProtoBuf.readTag;
-    end;
-  if not IsAllRequiredLoaded then
-    raise EStreamError.Create('not enought fields');
+    2:
+      begin
+        FDefField2 := ProtoBuf.readInt64;
+        Result := True;
+      end;
+    3:
+      begin
+        FDefField3 := ProtoBuf.readString;
+        Result := True;
+      end;
+    4:
+      begin
+        FDefField4 := ProtoBuf.readDouble;
+        Result := True;
+      end;
+    5:
+      begin
+        FDefField5 := ProtoBuf.readBoolean;
+        Result := True;
+      end;
+    6:
+      begin
+        FDefField6 := TEnumG0(ProtoBuf.readEnum);
+        Result := True;
+      end;
+    7:
+      begin
+        FDefField7 := ProtoBuf.readSInt64;
+        Result := True;
+      end;
+    8:
+      begin
+        FDefField8 := ProtoBuf.readFixed32;
+        Result := True;
+      end;
+    9:
+      begin
+        FDefField9 := ProtoBuf.readFloat;
+        Result := True;
+      end;
+    20:
+      begin
+        tmpBuf := ProtoBuf.ReadSubProtoBufInput;
+        try
+          FFieldMsg1.LoadFromBuf(tmpBuf);
+        finally
+          tmpBuf.Free;
+        end;
+        Result := True;
+      end;
+    40:
+      begin
+        FFieldArr1List.Add(ProtoBuf.readInt32);
+        Result := True;
+      end;
+    41:
+      begin
+        FFieldArr2List.Add(ProtoBuf.readInt32);
+        Result := True;
+      end;
+    42:
+      begin
+        FFieldArr3List.Add(ProtoBuf.readString);
+        Result := True;
+      end;
+    44:
+      begin
+        FFieldMArr2List.AddFromBuf(ProtoBuf, fieldNumber);
+        Result := True;
+      end;
+  end;
 end;
 
-procedure TTestMsg1.SaveToBuf(ProtoBuf: TProtoBufOutput);
+procedure TTestMsg1.SaveFieldsToBuf(ProtoBuf: TProtoBufOutput);
 var
   tmpBuf: TProtoBufOutput;
   i: integer;
 begin
+  inherited;
   ProtoBuf.writeInt32(1, FDefField1);
   ProtoBuf.writeInt64(2, FDefField2);
   ProtoBuf.writeString(3, FDefField3);
@@ -276,7 +264,7 @@ begin
     ProtoBuf.writeInt32(41, FFieldArr2List[i]);
   for i := 0 to FFieldArr3List.Count-1 do
     ProtoBuf.writeString(42, FFieldArr3List[i]);
-    FFieldMArr2List.SaveToBuf(ProtoBuf, 44);
+  FFieldMArr2List.SaveToBuf(ProtoBuf, 44);
 end;
 
 end.

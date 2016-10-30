@@ -78,6 +78,7 @@
         <DCC_RemoteDebug>true</DCC_RemoteDebug>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
+        <DCC_Define>madExcept;LeakChecking;$(DCC_Define)</DCC_Define>
         <DCC_RemoteDebug>false</DCC_RemoteDebug>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
@@ -102,7 +103,6 @@
         <DCCReference Include="TestuProtoBufGenerator.pas"/>
         <DCCReference Include="Win32\Debug\test1.pas"/>
         <DCCReference Include="TestGeneratedProtoBufPas.pas"/>
-        <DCCReference Include="Win32\Debug\test2.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

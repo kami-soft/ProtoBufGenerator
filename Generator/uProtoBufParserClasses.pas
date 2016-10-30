@@ -104,9 +104,16 @@ type
   end;
 
   TProtoFile = class(TAbstractProtoBufParserItem)
-  private
+  strict private
     FProtoBufMessages: TProtoBufMessageList;
     FProtoBufEnums: TProtoBufEnumList;
+
+    FInImportCounter: integer;
+    FFileName: string;
+
+    procedure ImportFromProtoFile(const AFileName: string);
+  private
+    FImports: TStrings;
   public
     constructor Create(ARoot: TAbstractProtoBufParserItem); override;
     destructor Destroy; override;
@@ -116,8 +123,11 @@ type
 
     procedure ParseFromProto(const Proto: string; var iPos: integer); override;
 
+    property Imports: TStrings read FImports;
     property ProtoBufEnums: TProtoBufEnumList read FProtoBufEnums;
     property ProtoBufMessages: TProtoBufMessageList read FProtoBufMessages;
+
+    property FileName: string read FFileName write FFileName;
   end;
 
 function StrToPropertyType(const AStr: string): TScalarPropertyType;
@@ -127,6 +137,8 @@ implementation
 uses
   System.SysUtils,
   System.StrUtils,
+  System.IOUtils,
+  Winapi.Windows,
   System.Character;
 
 function PropKindToStr(APropKind: TPropKind): string;
@@ -251,7 +263,7 @@ begin
   if (Proto[iPos] = '/') and (Proto[iPos + 1] = '/') then
     begin
       Inc(iPos, 2);
-      Result := ReadAllToEOL(Proto, iPos)+' ';
+      Result := ReadAllToEOL(Proto, iPos) + ' ';
     end
   else
     Result := '';
@@ -531,6 +543,7 @@ end;
 constructor TProtoFile.Create(ARoot: TAbstractProtoBufParserItem);
 begin
   inherited;
+  FImports := TStringList.Create;
   FProtoBufMessages := TProtoBufMessageList.Create;
   FProtoBufEnums := TProtoBufEnumList.Create;
 end;
@@ -539,7 +552,69 @@ destructor TProtoFile.Destroy;
 begin
   FreeAndNil(FProtoBufEnums);
   FreeAndNil(FProtoBufMessages);
+  FreeAndNil(FImports);
   inherited;
+end;
+
+function PathRelativePathTo(pszPath: PChar; pszFrom: PChar; dwAttrFrom: DWORD; pszTo: PChar; dwAtrTo: DWORD): LongBool; stdcall;
+  external 'shlwapi.dll' name 'PathRelativePathToW';
+function PathCanonicalize(lpszDst: PChar; lpszSrc: PChar): LongBool; stdcall; external 'shlwapi.dll' name 'PathCanonicalizeW';
+
+function AbsToRel(const AbsPath, BasePath: string): string;
+var
+  Path: array [0 .. MAX_PATH - 1] of Char;
+begin
+  PathRelativePathTo(@Path[0], PChar(BasePath), FILE_ATTRIBUTE_DIRECTORY, PChar(AbsPath), 0);
+  Result := Path;
+end;
+
+function RelToAbs(const RelPath, BasePath: string): string;
+var
+  Dst: array [0 .. MAX_PATH - 1] of Char;
+begin
+  if TPath.IsRelativePath(RelPath) then
+    begin
+      PathCanonicalize(@Dst[0], PChar(IncludeTrailingPathDelimiter(BasePath) + RelPath));
+      Result := Dst;
+    end
+  else
+    Result := RelPath;
+end;
+
+procedure TProtoFile.ImportFromProtoFile(const AFileName: string);
+var
+  SL: TStringList;
+  iPos: integer;
+  OldFileName: string;
+  OldName: string;
+  sFileName: string;
+begin
+  if FFileName = '' then
+    raise EParserError.CreateFmt('Cant import from %s, because source .proto file name not specified', [AFileName]);
+  Inc(FInImportCounter);
+  try
+    SL := TStringList.Create;
+    try
+      sFileName := RelToAbs(AFileName, ExtractFilePath(FFileName));
+      SL.LoadFromFile(sFileName);
+
+      OldFileName := FFileName;
+      OldName := FName;
+      try
+        FFileName := sFileName;
+        iPos := 1;
+        ParseFromProto(SL.Text, iPos);
+        FImports.Add(FName);
+      finally
+        FFileName := OldFileName;
+        FName := OldName;
+      end;
+    finally
+      SL.Free;
+    end;
+  finally
+    Dec(FInImportCounter);
+  end;
 end;
 
 procedure TProtoFile.ParseEnum(const Proto: string; var iPos: integer);
@@ -548,6 +623,7 @@ var
 begin
   Enum := TProtoBufEnum.Create(Self);
   try
+    Enum.IsImported := FInImportCounter > 0;
     Enum.ParseFromProto(Proto, iPos);
     FProtoBufEnums.Add(Enum);
     Enum := nil;
@@ -575,7 +651,8 @@ begin
       Buf := ReadWordFromBuf(Proto, iPos, []);
       if Buf = 'import' then
         begin
-          ReadAllTillChar(Proto, iPos, [';']);
+          Buf := Trim(ReadAllTillChar(Proto, iPos, [';']));
+          ImportFromProtoFile(AnsiDequotedStr(Buf, '"'));
           SkipRequiredChar(Proto, iPos, ';');
         end;
       if Buf = 'enum' then
@@ -604,6 +681,7 @@ var
 begin
   Msg := TProtoBufMessage.Create(Self);
   try
+    Msg.IsImported := FInImportCounter > 0;
     Msg.ParseFromProto(Proto, iPos);
     FProtoBufMessages.Add(Msg);
     Msg := nil;
