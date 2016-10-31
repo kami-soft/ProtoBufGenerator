@@ -22,15 +22,6 @@ type
     g2 = 2
   );
 
-  TTestMsg0 = class(TAbstractProtoBufClass)
-  strict private
-  strict protected
-    function LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer): Boolean; override;
-    procedure SaveFieldsToBuf(ProtoBuf: TProtoBufOutput); override;
-  public
-
-  end;
-
   TNestedMsg0 = class(TAbstractProtoBufClass)
   strict private
     FNestedField1: integer;
@@ -40,6 +31,15 @@ type
   public
 
     property NestedField1:integer read FNestedField1 write FNestedField1;
+  end;
+
+  TTestMsg0 = class(TAbstractProtoBufClass)
+  strict private
+  strict protected
+    function LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer): Boolean; override;
+    procedure SaveFieldsToBuf(ProtoBuf: TProtoBufOutput); override;
+  public
+
   end;
 
   TTestMsg1 = class(TAbstractProtoBufClass)
@@ -90,17 +90,6 @@ type
 implementation
 
 
-function TTestMsg0.LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer): Boolean;
-begin
-  Result := inherited LoadSingleFieldFromBuf(ProtoBuf, FieldNumber);
-end;
-
-procedure TTestMsg0.SaveFieldsToBuf(ProtoBuf: TProtoBufOutput);
-begin
-  inherited;
-end;
-
-
 function TNestedMsg0.LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer): Boolean;
 begin
   Result := inherited LoadSingleFieldFromBuf(ProtoBuf, FieldNumber);
@@ -119,6 +108,17 @@ procedure TNestedMsg0.SaveFieldsToBuf(ProtoBuf: TProtoBufOutput);
 begin
   inherited;
   ProtoBuf.writeInt32(1, FNestedField1);
+end;
+
+
+function TTestMsg0.LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer): Boolean;
+begin
+  Result := inherited LoadSingleFieldFromBuf(ProtoBuf, FieldNumber);
+end;
+
+procedure TTestMsg0.SaveFieldsToBuf(ProtoBuf: TProtoBufOutput);
+begin
+  inherited;
 end;
 
 

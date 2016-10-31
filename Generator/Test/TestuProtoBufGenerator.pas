@@ -92,8 +92,8 @@ begin
     #13#10 + //
     'package test1;'#13#10 + //
     #13#10 + //
-    'import "TestImport1.proto";'#13#10 + //
-    #13#10 + //
+    //'import "TestImport1.proto";'#13#10 + //
+    //#13#10 + //
     '// enumeration'#13#10 + //
     'enum EnumG0 {'#13#10 + //
     '  // enum value 1'#13#10+
@@ -155,8 +155,8 @@ begin
     #13#10 + //
     'package test2;'#13#10 + //
     #13#10 + //
-    'import "TestImport1.proto";'#13#10 + //
-    #13#10 + //
+    //'import "TestImport1.proto";'#13#10 + //
+    //#13#10 + //
     '// enumeration'#13#10 + //
     'enum EnumG0 {'#13#10 + //
     '  // enum value 1'#13#10+
