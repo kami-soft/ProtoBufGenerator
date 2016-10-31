@@ -119,7 +119,7 @@ type
     destructor Destroy; override;
 
     procedure ParseEnum(const Proto: string; var iPos: integer);
-    procedure ParseMessage(const Proto: string; var iPos: integer);
+    procedure ParseMessage(const Proto: string; var iPos: integer; IsExtension: Boolean = False);
 
     procedure ParseFromProto(const Proto: string; var iPos: integer); override;
 
@@ -635,6 +635,7 @@ end;
 procedure TProtoFile.ParseFromProto(const Proto: string; var iPos: integer);
 var
   Buf: string;
+  i, j: integer;
 begin
   // need skip comments,
   // parse .proto package name
@@ -660,29 +661,49 @@ begin
 
       if Buf = 'message' then
         ParseMessage(Proto, iPos);
+      if Buf = 'extend' then
+        ParseMessage(Proto, iPos, True);
     end;
 
-  FProtoBufMessages.Sort(TComparer<TProtoBufMessage>.Construct(
+  // can`t use QuickSort because of .proto items order
+  for i := 0 to FProtoBufMessages.Count - 1 do
+    for j := i + 1 to FProtoBufMessages.Count - 1 do
+      begin
+        if FProtoBufMessages[i].HasPropertyOfType(FProtoBufMessages[j].Name) then
+          FProtoBufMessages.Exchange(i, j);
+      end;
+  { FProtoBufMessages.Sort(TComparer<TProtoBufMessage>.Construct(
     function(const Left, Right: TProtoBufMessage): integer
     begin
-      if Left.HasPropertyOfType(Right.Name) then
-        Result := 1
-      else
-        if Right.HasPropertyOfType(Left.Name) then
-          Result := -1
-        else
-          Result := 0;
-    end));
+    if Left.HasPropertyOfType(Right.Name) then
+    Result := 1
+    else
+    if Right.HasPropertyOfType(Left.Name) then
+    Result := -1
+    else
+    Result := 0;
+    end)); }
 end;
 
-procedure TProtoFile.ParseMessage(const Proto: string; var iPos: integer);
+procedure TProtoFile.ParseMessage(const Proto: string; var iPos: integer; IsExtension: Boolean);
 var
   Msg: TProtoBufMessage;
+  i: integer;
 begin
   Msg := TProtoBufMessage.Create(Self);
   try
     Msg.IsImported := FInImportCounter > 0;
     Msg.ParseFromProto(Proto, iPos);
+    if IsExtension then
+      begin
+        for i := 1 to High(integer) do
+          if FProtoBufMessages.FindByName(Msg.Name + 'Extension' + IntToStr(i)) = nil then
+            begin
+              Msg.ExtendOf := Msg.Name;
+              Msg.Name := Msg.Name + 'Extension' + IntToStr(i);
+              Break;
+            end;
+      end;
     FProtoBufMessages.Add(Msg);
     Msg := nil;
   finally

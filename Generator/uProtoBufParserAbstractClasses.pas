@@ -14,7 +14,7 @@ type
   public
     constructor Create(ARoot: TAbstractProtoBufParserItem); virtual;
     procedure ParseFromProto(const Proto: string; var iPos: Integer); virtual; abstract;
-    property Name: string read FName;
+    property Name: string read FName write FName;
   end;
 
   TAbstractProtoBufParserContainer<T: TAbstractProtoBufParserItem> = class(TObjectList<T>)
@@ -27,7 +27,7 @@ type
   public
     constructor Create(ARoot: TAbstractProtoBufParserItem); virtual;
     procedure ParseFromProto(const Proto: string; var iPos: Integer); virtual;
-    property Name: string read FName;
+    property Name: string read FName write FName;
 
     property IsImported: Boolean read FIsImported write FIsImported;
     property ExtendOf: string read FExtendOf write FExtendOf;
