@@ -21,7 +21,8 @@ Limitations:
      ```
 
 - field types `Any` and `OneOf` not supported
-- `extensions` not supported
+- reserved word `extensions` not supported
+- packed repeated fields not supported
 
 ## How to use
 + add root folder of this project to library path (Tools - Options - Delphi options - Library)
