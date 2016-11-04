@@ -380,7 +380,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
                     SL.Add('            tmpBuf:=ProtoBuf.ReadSubProtoBufInput;');
                     SL.Add('            try');
                     SL.Add('              while tmpBuf.getPos<tmpBuf.BufSize do');
-                    SL.Add(Format('                F%s.Add(ProtoBuf.read%s);', [DelphiProp.PropertyName, GetProtoBufMethodForScalarType(Prop)]));
+                    SL.Add(Format('                F%s.Add(tmpBuf.read%s);', [DelphiProp.PropertyName, GetProtoBufMethodForScalarType(Prop)]));
                     SL.Add('            finally');
                     SL.Add('              tmpBuf.Free;');
                     SL.Add('            end;');
@@ -401,7 +401,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
                       SL.Add('            tmpBuf:=ProtoBuf.ReadSubProtoBufInput;');
                       SL.Add('            try');
                       SL.Add('              while tmpBuf.getPos<tmpBuf.BufSize do');
-                      SL.Add(Format('                F%s.Add(T%s(ProtoBuf.readEnum));', [DelphiProp.PropertyName, Prop.PropType]));
+                      SL.Add(Format('                F%s.Add(T%s(tmpBuf.readEnum));', [DelphiProp.PropertyName, Prop.PropType]));
                       SL.Add('            finally');
                       SL.Add('              tmpBuf.Free;');
                       SL.Add('            end;');
