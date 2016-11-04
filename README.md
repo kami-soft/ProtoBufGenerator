@@ -2,7 +2,7 @@
 ## Work in progress!
 Delphi ProtoBuf files generator
 
-Work with binary ProtoBuf messages based on https://sourceforge.net/projects/protobuf-delphi/files/ by marat1961 (sources have little modifications)
+Work with binary ProtoBuf messages based on https://sourceforge.net/projects/protobuf-delphi/files/ by marat1961 (sources have some modifications)
 
 Main features:
 - generate classes, not records (like most other parsers)
@@ -32,6 +32,4 @@ Limitations:
 + select directory for new generated .pas file
 + add generated file to your project
 
-Do not use LoadFromBuf/SaveToBuf methods in generated classes!
-
-Use LoadFromStream and SaveToStream methods, which inherited from base class.
+Do not use LoadFromBuf/SaveToBuf methods in generated classes! Use LoadFromStream and SaveToStream methods, which inherited from base class.

@@ -54,7 +54,7 @@ type
 
   TProtoBufProperty = class(TAbstractProtoBufParserItem)
   strict private
-    FPropTag: integer;
+    FPropFieldNum: integer;
     FPropType: string;
     FPropKind: TPropKind;
     FPropComment: string;
@@ -67,7 +67,7 @@ type
 
     property PropKind: TPropKind read FPropKind;
     property PropType: string read FPropType;
-    property PropTag: integer read FPropTag;
+    property PropFieldNum: integer read FPropFieldNum;
     property PropComment: string read FPropComment;
     property PropOptions: TProtoBufPropOptions read FPropOptions;
   end;
@@ -103,6 +103,8 @@ type
     function FindByName(const MessageName: string): TProtoBufMessage;
   end;
 
+  TProtoSyntaxVersion = (psv2, psv3);
+
   TProtoFile = class(TAbstractProtoBufParserItem)
   strict private
     FProtoBufMessages: TProtoBufMessageList;
@@ -110,10 +112,12 @@ type
 
     FInImportCounter: integer;
     FFileName: string;
+    FImports: TStrings;
+    FProtoSyntaxVersion: TProtoSyntaxVersion;
 
     procedure ImportFromProtoFile(const AFileName: string);
   private
-    FImports: TStrings;
+    procedure SetFileName(const Value: string);
   public
     constructor Create(ARoot: TAbstractProtoBufParserItem); override;
     destructor Destroy; override;
@@ -127,7 +131,8 @@ type
     property ProtoBufEnums: TProtoBufEnumList read FProtoBufEnums;
     property ProtoBufMessages: TProtoBufMessageList read FProtoBufMessages;
 
-    property FileName: string read FFileName write FFileName;
+    property FileName: string read FFileName write SetFileName;
+    property ProtoSyntaxVersion: TProtoSyntaxVersion read FProtoSyntaxVersion;
   end;
 
 function StrToPropertyType(const AStr: string): TScalarPropertyType;
@@ -298,6 +303,7 @@ end;
 procedure TProtoBufProperty.ParseFromProto(const Proto: string; var iPos: integer);
 var
   Buf: string;
+  tmpOption: TProtoBufPropOption;
 begin
   inherited;
   FPropOptions.Clear;
@@ -326,11 +332,21 @@ begin
 
   // read property tag
   Buf := ReadWordFromBuf(Proto, iPos, [';', '[']);
-  FPropTag := StrToInt(Buf);
+  FPropFieldNum := StrToInt(Buf);
 
   SkipWhitespaces(Proto, iPos);
   if Proto[iPos] = '[' then
     FPropOptions.ParseFromProto(Proto, iPos);
+
+  if Assigned(FRoot) then
+    if TProtoFile(FRoot).ProtoSyntaxVersion = psv3 then
+      if not FPropOptions.HasValue['packed'] then
+        begin
+          tmpOption := TProtoBufPropOption.Create(FRoot);
+          FPropOptions.Add(tmpOption);
+          tmpOption.Name := 'packed';
+          tmpOption.FOptionValue := 'true';
+        end;
 
   // read separator
   SkipRequiredChar(Proto, iPos, ';');
@@ -534,7 +550,7 @@ begin
   Sort(TComparer<TProtoBufProperty>.Construct(
     function(const Left, Right: TProtoBufProperty): integer
     begin
-      Result := Left.PropTag - Right.PropTag;
+      Result := Left.PropFieldNum - Right.PropFieldNum;
     end));
 end;
 
@@ -639,23 +655,32 @@ var
 begin
   // need skip comments,
   // parse .proto package name
-  SkipAllComments(Proto, iPos);
-
-  while ReadWordFromBuf(Proto, iPos, []) <> 'package' do;
-
-  FName := ReadWordFromBuf(Proto, iPos, [';']);
-  SkipRequiredChar(Proto, iPos, ';');
-
   while iPos < Length(Proto) do
     begin
       SkipAllComments(Proto, iPos);
       Buf := ReadWordFromBuf(Proto, iPos, []);
+
+      if Buf = 'package' then
+        begin
+          FName := ReadWordFromBuf(Proto, iPos, [';']);
+          SkipRequiredChar(Proto, iPos, ';');
+        end;
+
+      if Buf = 'syntax' then
+        begin
+          Buf := Trim(ReadWordFromBuf(Proto, iPos, []));
+          SkipRequiredChar(Proto, iPos, ';');
+          if Buf = '"proto3"' then
+            FProtoSyntaxVersion := psv3;
+        end;
+
       if Buf = 'import' then
         begin
           Buf := Trim(ReadAllTillChar(Proto, iPos, [';']));
           ImportFromProtoFile(AnsiDequotedStr(Buf, '"'));
           SkipRequiredChar(Proto, iPos, ';');
         end;
+
       if Buf = 'enum' then
         ParseEnum(Proto, iPos);
 
@@ -709,6 +734,12 @@ begin
   finally
     Msg.Free;
   end;
+end;
+
+procedure TProtoFile.SetFileName(const Value: string);
+begin
+  FFileName := Value;
+  FName:=ChangeFileExt(ExtractFileName(Value), '');
 end;
 
 { TProtoBufMessageList }

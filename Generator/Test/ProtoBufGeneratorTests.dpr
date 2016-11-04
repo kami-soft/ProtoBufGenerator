@@ -30,9 +30,7 @@ uses
   pbOutput in '..\..\pbOutput.pas',
   pbPublic in '..\..\pbPublic.pas',
   StrBuffer in '..\..\StrBuffer.pas',
-  TestuProtoBufGenerator in 'TestuProtoBufGenerator.pas',
-  test1 in 'Win32\Debug\test1.pas',
-  TestGeneratedProtoBufPas in 'TestGeneratedProtoBufPas.pas';
+  TestuProtoBufGenerator in 'TestuProtoBufGenerator.pas';
 
 {R *.RES}
 

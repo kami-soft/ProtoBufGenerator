@@ -22,7 +22,7 @@ type
     procedure RegisterRequiredField(Tag: integer);
     function IsAllRequiredLoaded: Boolean;
 
-    function LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer): Boolean; virtual;
+    function LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer; WireType: integer): Boolean; virtual;
     procedure SaveFieldsToBuf(ProtoBuf: TProtoBufOutput); virtual; abstract;
   public
     constructor Create; virtual;
@@ -104,7 +104,7 @@ begin
   while Tag <> 0 do
     begin
       FieldNumber := getTagFieldNumber(Tag);
-      if not LoadSingleFieldFromBuf(ProtoBuf, FieldNumber) then
+      if not LoadSingleFieldFromBuf(ProtoBuf, FieldNumber, getTagWireType(Tag)) then
         ProtoBuf.skipField(Tag)
       else
         AddLoadedField(FieldNumber);
@@ -135,7 +135,7 @@ begin
   end;
 end;
 
-function TAbstractProtoBufClass.LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer): Boolean;
+function TAbstractProtoBufClass.LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer; WireType: integer): Boolean;
 begin
   Result := False;
 end;
