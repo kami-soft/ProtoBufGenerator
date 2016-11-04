@@ -163,7 +163,7 @@ begin
   CheckTrue(ptDefaultOptional = FProtoBufProperty.PropKind);
   CheckEquals('int32', FProtoBufProperty.PropType);
   CheckEquals('DefField1', FProtoBufProperty.Name);
-  CheckEquals(1, FProtoBufProperty.PropTag);
+  CheckEquals(1, FProtoBufProperty.PropFieldNum);
   CheckEquals(0, FProtoBufProperty.PropOptions.Count);
   CheckEquals('', FProtoBufProperty.PropComment);
 
@@ -175,7 +175,7 @@ begin
   CheckTrue(ptDefaultOptional = FProtoBufProperty.PropKind);
   CheckEquals('int32', FProtoBufProperty.PropType);
   CheckEquals('DefField1', FProtoBufProperty.Name);
-  CheckEquals(1, FProtoBufProperty.PropTag);
+  CheckEquals(1, FProtoBufProperty.PropFieldNum);
   CheckEquals(0, FProtoBufProperty.PropOptions.Count);
   CheckEquals('', FProtoBufProperty.PropComment);
 
@@ -187,7 +187,7 @@ begin
   CheckTrue(ptOptional = FProtoBufProperty.PropKind);
   CheckEquals('int32', FProtoBufProperty.PropType);
   CheckEquals('DefField1', FProtoBufProperty.Name);
-  CheckEquals(1, FProtoBufProperty.PropTag);
+  CheckEquals(1, FProtoBufProperty.PropFieldNum);
   CheckEquals(2, FProtoBufProperty.PropOptions.Count);
   CheckEquals('default', FProtoBufProperty.PropOptions[0].Name);
   CheckEquals('Val2', FProtoBufProperty.PropOptions[0].OptionValue);
@@ -203,7 +203,7 @@ begin
   CheckTrue(ptOptional = FProtoBufProperty.PropKind);
   CheckEquals('int32', FProtoBufProperty.PropType);
   CheckEquals('DefField1', FProtoBufProperty.Name);
-  CheckEquals(1, FProtoBufProperty.PropTag);
+  CheckEquals(1, FProtoBufProperty.PropFieldNum);
   CheckEquals(2, FProtoBufProperty.PropOptions.Count);
   CheckEquals('default', FProtoBufProperty.PropOptions[0].Name);
   CheckEquals('Val2', FProtoBufProperty.PropOptions[0].OptionValue);
@@ -219,7 +219,7 @@ begin
   CheckTrue(ptRequired = FProtoBufProperty.PropKind);
   CheckEquals('int32', FProtoBufProperty.PropType);
   CheckEquals('DefField1', FProtoBufProperty.Name);
-  CheckEquals(1, FProtoBufProperty.PropTag);
+  CheckEquals(1, FProtoBufProperty.PropFieldNum);
   CheckEquals(2, FProtoBufProperty.PropOptions.Count);
   CheckEquals('default', FProtoBufProperty.PropOptions[0].Name);
   CheckEquals('Val2', FProtoBufProperty.PropOptions[0].OptionValue);
@@ -235,7 +235,7 @@ begin
   CheckTrue(ptRepeated = FProtoBufProperty.PropKind);
   CheckEquals('string', FProtoBufProperty.PropType);
   CheckEquals('DefField1', FProtoBufProperty.Name);
-  CheckEquals(1, FProtoBufProperty.PropTag);
+  CheckEquals(1, FProtoBufProperty.PropFieldNum);
   CheckEquals(2, FProtoBufProperty.PropOptions.Count);
   CheckEquals('default', FProtoBufProperty.PropOptions[0].Name);
   CheckEquals('"Va""l2"', FProtoBufProperty.PropOptions[0].OptionValue);

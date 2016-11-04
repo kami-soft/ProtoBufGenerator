@@ -75,6 +75,8 @@ type
     function readFixed64: int64;
     // Read a fixed32 field value
     function readFixed32: integer;
+
+    function readRawBoolean: boolean;
     // Read a boolean field value
     function readBoolean: boolean;
     // Read a AnsiString field value
@@ -111,6 +113,8 @@ type
     procedure skipRawBytes(size: integer);
 
     function ReadSubProtoBufInput: TProtoBufInput;
+
+    property BufSize: integer read FLen;
   end;
 
 function decodeZigZag32(n: integer): integer;
@@ -243,7 +247,7 @@ end;
 
 function TProtoBufInput.readBoolean: boolean;
 begin
-  result := readRawVarint32 <> 0;
+  result := readRawBoolean;
 end;
 
 function TProtoBufInput.readBytes: TBytes;
@@ -373,6 +377,11 @@ end;
 function TProtoBufInput.readRawLittleEndian64: int64;
 begin
   readRawBytes(result, SizeOf(result));
+end;
+
+function TProtoBufInput.readRawBoolean: boolean;
+begin
+  result := readRawVarint32 <> 0;
 end;
 
 function TProtoBufInput.readRawByte: shortint;

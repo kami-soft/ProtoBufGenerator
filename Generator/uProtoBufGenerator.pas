@@ -70,40 +70,88 @@ begin
   end;
 end;
 
-function GetProtoBufMethodForScalarType(const PropTypeName: string): string;
+function PropertyIsPrimitiveNumericPacked(Prop: TProtoBufProperty): Boolean;
+begin
+  Result := (Prop.PropOptions.Value['packed'] = 'true') and (StrToPropertyType(Prop.PropType) in [sptDouble, sptFloat, sptInt32, sptInt64, sptuInt32, sptUint64,
+    sptSInt32, sptSInt64, sptBool, sptFixed32, sptSFixed32, sptFixed64, sptSFixed64])
+end;
+
+function GetProtoBufMethodForScalarType(const Prop: TProtoBufProperty): string;
 var
   StandartType: TScalarPropertyType;
+  bPacked: Boolean;
 begin
-  StandartType := StrToPropertyType(PropTypeName);
+  StandartType := StrToPropertyType(Prop.PropType);
+  bPacked := (Prop.PropKind = ptRepeated) and PropertyIsPrimitiveNumericPacked(Prop);
+
   case StandartType of
     sptComplex:
       ;
     sptDouble:
-      Result := 'Double';
+      if bPacked then
+        Result := 'RawData'
+      else
+        Result := 'Double';
     sptFloat:
-      Result := 'Float';
+      if bPacked then
+        Result := 'RawData'
+      else
+        Result := 'Float';
     sptInt32:
-      Result := 'Int32';
+      if bPacked then
+        Result := 'RawVarint32'
+      else
+        Result := 'Int32';
     sptInt64:
-      Result := 'Int64';
+      if bPacked then
+        Result := 'RawVarint64'
+      else
+        Result := 'Int64';
     sptuInt32:
-      Result := 'UInt32';
+      if bPacked then
+        Result := 'RawVarint32'
+      else
+        Result := 'UInt32';
     sptUint64:
-      Result := 'Int64';
+      if bPacked then
+        Result := 'RawVarint64'
+      else
+        Result := 'Int64';
     sptSInt32:
-      Result := 'SInt32';
+      if bPacked then
+        Result := 'RawSInt32'
+      else
+        Result := 'SInt32';
     sptSInt64:
-      Result := 'SInt64';
+      if bPacked then
+        Result := 'RawSInt64'
+      else
+        Result := 'SInt64';
     sptFixed32:
-      Result := 'Fixed32';
+      if bPacked then
+        Result := 'RawData'
+      else
+        Result := 'Fixed32';
     sptFixed64:
-      Result := 'Fixed64';
+      if bPacked then
+        Result := 'RawData'
+      else
+        Result := 'Fixed64';
     sptSFixed32:
-      Result := 'SFixed32';
+      if bPacked then
+        Result := 'RawData'
+      else
+        Result := 'SFixed32';
     sptSFixed64:
-      Result := 'SFixed64';
+      if bPacked then
+        Result := 'RawData'
+      else
+        Result := 'SFixed64';
     sptBool:
-      Result := 'Boolean';
+      if bPacked then
+        Result := 'RawBoolean'
+      else
+        Result := 'Boolean';
     sptString:
       Result := 'String';
     sptBytes:
@@ -257,7 +305,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
         if Prop.PropOptions.HasValue['default'] then
           SL.Add(Format('  F%s := %s;', [DelphiProp.PropertyName, ReQuoteStr(Prop.PropOptions.Value['default'])]));
         if Prop.PropKind = ptRequired then
-          SL.Add(Format('  RegisterRequiredField(%d);', [Prop.PropTag]));
+          SL.Add(Format('  RegisterRequiredField(%d);', [Prop.PropFieldNum]));
       end;
     SL.Add('end;');
 
@@ -282,14 +330,14 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
     DelphiProp: TDelphiProperty;
   begin
     SL.Add('');
-    SL.Add(Format('function T%s.LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer): Boolean;', [ProtoMsg.Name]));
+    SL.Add(Format('function T%s.LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer; WireType: integer): Boolean;', [ProtoMsg.Name]));
     if MsgNeedConstructor(ProtoMsg, Proto) then
       begin
         SL.Add('var');
         SL.Add('  tmpBuf: TProtoBufInput;'); // avoid compiler hint
       end;
     SL.Add('begin');
-    SL.Add('  Result := inherited LoadSingleFieldFromBuf(ProtoBuf, FieldNumber);');
+    SL.Add('  Result := inherited LoadSingleFieldFromBuf(ProtoBuf, FieldNumber, WireType);');
     if ProtoMsg.Count = 0 then
       begin
         SL.Add('end;');
@@ -302,12 +350,12 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
       begin
         Prop := ProtoMsg[i];
         ParsePropType(Prop, Proto, DelphiProp);
-        SL.Add(Format('    %d:', [Prop.PropTag]));
+        SL.Add(Format('    %d:', [Prop.PropFieldNum]));
         SL.Add('      begin');
         if not DelphiProp.IsList then
           begin
             if not DelphiProp.isComplex then
-              SL.Add(Format('        F%s := ProtoBuf.read%s;', [DelphiProp.PropertyName, GetProtoBufMethodForScalarType(Prop.PropType)]))
+              SL.Add(Format('        F%s := ProtoBuf.read%s;', [DelphiProp.PropertyName, GetProtoBufMethodForScalarType(Prop)]))
             else
               if not DelphiProp.isObject then
                 SL.Add(Format('        F%s := %s(ProtoBuf.readEnum);', [DelphiProp.PropertyName, DelphiProp.PropertyType]))
@@ -324,10 +372,46 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
         else
           begin
             if not DelphiProp.isComplex then
-              SL.Add(Format('        F%s.Add(ProtoBuf.read%s);', [DelphiProp.PropertyName, GetProtoBufMethodForScalarType(Prop.PropType)]))
+              begin
+                if PropertyIsPrimitiveNumericPacked(Prop) then
+                  begin
+                    SL.Add('        if WireType = WIRETYPE_LENGTH_DELIMITED then');
+                    SL.Add('          begin');
+                    SL.Add('            tmpBuf:=ProtoBuf.ReadSubProtoBufInput;');
+                    SL.Add('            try');
+                    SL.Add('              while tmpBuf.getPos<tmpBuf.BufSize do');
+                    SL.Add(Format('                F%s.Add(ProtoBuf.read%s);', [DelphiProp.PropertyName, GetProtoBufMethodForScalarType(Prop)]));
+                    SL.Add('            finally');
+                    SL.Add('              tmpBuf.Free;');
+                    SL.Add('            end;');
+                    SL.Add('          end');
+                    SL.Add('        else');
+                    SL.Add(Format('          F%s.Add(ProtoBuf.read%s);', [DelphiProp.PropertyName, GetProtoBufMethodForScalarType(Prop)]));
+                  end
+                else
+                  SL.Add(Format('        F%s.Add(ProtoBuf.read%s);', [DelphiProp.PropertyName, GetProtoBufMethodForScalarType(Prop)]));
+              end
             else
               if not DelphiProp.isObject then
-                SL.Add(Format('        F%s.Add(T%s(ProtoBuf.readEnum));', [DelphiProp.PropertyName, Prop.PropType]))
+                begin
+                  if (Prop.PropOptions.Value['packed'] = 'true') then
+                    begin
+                      SL.Add('        if WireType = WIRETYPE_LENGTH_DELIMITED then');
+                      SL.Add('          begin');
+                      SL.Add('            tmpBuf:=ProtoBuf.ReadSubProtoBufInput;');
+                      SL.Add('            try');
+                      SL.Add('              while tmpBuf.getPos<tmpBuf.BufSize do');
+                      SL.Add(Format('                F%s.Add(T%s(ProtoBuf.readEnum));', [DelphiProp.PropertyName, Prop.PropType]));
+                      SL.Add('            finally');
+                      SL.Add('              tmpBuf.Free;');
+                      SL.Add('            end;');
+                      SL.Add('          end');
+                      SL.Add('        else');
+                      SL.Add(Format('          F%s.Add(T%s(ProtoBuf.readEnum));', [DelphiProp.PropertyName, Prop.PropType]));
+                    end
+                  else
+                    SL.Add(Format('        F%s.Add(T%s(ProtoBuf.readEnum));', [DelphiProp.PropertyName, Prop.PropType]));
+                end
               else
                 SL.Add(Format('        F%s.AddFromBuf(ProtoBuf, fieldNumber);', [DelphiProp.PropertyName]));
           end;
@@ -364,16 +448,16 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
         if not DelphiProp.IsList then
           begin
             if not DelphiProp.isComplex then
-              SL.Add(Format('  ProtoBuf.write%s(%d, F%s);', [GetProtoBufMethodForScalarType(Prop.PropType), Prop.PropTag, DelphiProp.PropertyName]))
+              SL.Add(Format('  ProtoBuf.write%s(%d, F%s);', [GetProtoBufMethodForScalarType(Prop), Prop.PropFieldNum, DelphiProp.PropertyName]))
             else
               if not DelphiProp.isObject then
-                SL.Add(Format('  ProtoBuf.writeInt32(%d, integer(F%s));', [Prop.PropTag, DelphiProp.PropertyName]))
+                SL.Add(Format('  ProtoBuf.writeInt32(%d, integer(F%s));', [Prop.PropFieldNum, DelphiProp.PropertyName]))
               else
                 begin
                   SL.Add('  tmpBuf:=TProtoBufOutput.Create;');
                   SL.Add('  try');
                   SL.Add(Format('    F%s.SaveToBuf(tmpBuf);', [DelphiProp.PropertyName]));
-                  SL.Add(Format('    ProtoBuf.writeMessage(%d, tmpBuf);', [Prop.PropTag]));
+                  SL.Add(Format('    ProtoBuf.writeMessage(%d, tmpBuf);', [Prop.PropFieldNum]));
                   SL.Add('  finally');
                   SL.Add('    tmpBuf.Free;');
                   SL.Add('  end;');
@@ -383,17 +467,45 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
           begin
             if not DelphiProp.isComplex then
               begin
-                SL.Add(Format('  for i := 0 to F%s.Count-1 do', [DelphiProp.PropertyName]));
-                SL.Add(Format('    ProtoBuf.write%s(%d, F%s[i]);', [GetProtoBufMethodForScalarType(Prop.PropType), Prop.PropTag, DelphiProp.PropertyName]));
+                if PropertyIsPrimitiveNumericPacked(Prop) then
+                  begin
+                    SL.Add('  tmpBuf:=TProtoBufOutput.Create;');
+                    SL.Add('  try');
+                    SL.Add(Format('    for i := 0 to F%s.Count-1 do', [DelphiProp.PropertyName]));
+                    SL.Add(Format('      tmpBuf.write%s(F%s[i]);', [GetProtoBufMethodForScalarType(Prop), DelphiProp.PropertyName]));
+                    SL.Add(Format('    ProtoBuf.writeMessage(%d, tmpBuf);', [Prop.PropFieldNum]));
+                    SL.Add('  finally');
+                    SL.Add('    tmpBuf.Free;');
+                    SL.Add('  end;');
+                  end
+                else
+                  begin
+                    SL.Add(Format('  for i := 0 to F%s.Count-1 do', [DelphiProp.PropertyName]));
+                    SL.Add(Format('    ProtoBuf.write%s(%d, F%s[i]);', [GetProtoBufMethodForScalarType(Prop), Prop.PropFieldNum, DelphiProp.PropertyName]));
+                  end;
               end
             else
               if not DelphiProp.isObject then
                 begin
-                  SL.Add(Format('  for i := 0 to F%s.Count-1 do', [DelphiProp.PropertyName]));
-                  SL.Add(Format('    ProtoBuf.writeInt32(%d, F%s[i]);', [Prop.PropTag, DelphiProp.PropertyName]));
+                  if Prop.PropOptions.Value['packed'] = 'true' then
+                    begin
+                      SL.Add('  tmpBuf:=TProtoBufOutput.Create;');
+                      SL.Add('  try');
+                      SL.Add(Format('    for i := 0 to F%s.Count-1 do', [DelphiProp.PropertyName]));
+                      SL.Add(Format('      tmpBuf.writeRawVarint32(integer(F%s[i]));', [DelphiProp.PropertyName]));
+                      SL.Add(Format('    ProtoBuf.writeMessage(%d, tmpBuf);', [Prop.PropFieldNum]));
+                      SL.Add('  finally');
+                      SL.Add('    tmpBuf.Free;');
+                      SL.Add('  end;');
+                    end
+                  else
+                    begin
+                      SL.Add(Format('  for i := 0 to F%s.Count-1 do', [DelphiProp.PropertyName]));
+                      SL.Add(Format('    ProtoBuf.writeInt32(%d, integer(F%s[i]));', [Prop.PropFieldNum, DelphiProp.PropertyName]));
+                    end;
                 end
               else
-                SL.Add(Format('  F%s.SaveToBuf(ProtoBuf, %d);', [DelphiProp.PropertyName, Prop.PropTag]));
+                SL.Add(Format('  F%s.SaveToBuf(ProtoBuf, %d);', [DelphiProp.PropertyName, Prop.PropFieldNum]));
           end;
       end;
 
@@ -476,7 +588,7 @@ procedure TProtoBufGenerator.GenerateInterfaceSection(Proto: TProtoFile; SL: TSt
         bNeedConstructor := bNeedConstructor or DelphiProp.IsList or DelphiProp.isObject or Prop.PropOptions.HasValue['default'];
       end;
     SL.Add('  strict protected');
-    SL.Add('    function LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer): Boolean; override;');
+    SL.Add('    function LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer; WireType: integer): Boolean; override;');
     SL.Add('    procedure SaveFieldsToBuf(ProtoBuf: TProtoBufOutput); override;');
 
     SL.Add('  public');

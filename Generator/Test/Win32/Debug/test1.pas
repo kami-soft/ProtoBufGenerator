@@ -26,7 +26,7 @@ type
   strict private
     FNestedField1: integer;
   strict protected
-    function LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer): Boolean; override;
+    function LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer; WireType: integer): Boolean; override;
     procedure SaveFieldsToBuf(ProtoBuf: TProtoBufOutput); override;
   public
 
@@ -36,7 +36,7 @@ type
   TTestMsg0 = class(TAbstractProtoBufClass)
   strict private
   strict protected
-    function LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer): Boolean; override;
+    function LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer; WireType: integer): Boolean; override;
     procedure SaveFieldsToBuf(ProtoBuf: TProtoBufOutput); override;
   public
 
@@ -59,7 +59,7 @@ type
     FFieldArr3List: TList<string>;
     FFieldMArr2List: TProtoBufClassList<TNestedMsg0>;
   strict protected
-    function LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer): Boolean; override;
+    function LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer; WireType: integer): Boolean; override;
     procedure SaveFieldsToBuf(ProtoBuf: TProtoBufOutput); override;
   public
     constructor Create; override;
@@ -88,9 +88,9 @@ type
 implementation
 
 
-function TNestedMsg0.LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer): Boolean;
+function TNestedMsg0.LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer; WireType: integer): Boolean;
 begin
-  Result := inherited LoadSingleFieldFromBuf(ProtoBuf, FieldNumber);
+  Result := inherited LoadSingleFieldFromBuf(ProtoBuf, FieldNumber, WireType);
   if Result then
     exit;
   case fieldNumber of
@@ -109,9 +109,9 @@ begin
 end;
 
 
-function TTestMsg0.LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer): Boolean;
+function TTestMsg0.LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer; WireType: integer): Boolean;
 begin
-  Result := inherited LoadSingleFieldFromBuf(ProtoBuf, FieldNumber);
+  Result := inherited LoadSingleFieldFromBuf(ProtoBuf, FieldNumber, WireType);
 end;
 
 procedure TTestMsg0.SaveFieldsToBuf(ProtoBuf: TProtoBufOutput);
@@ -150,11 +150,11 @@ begin
   inherited;
 end;
 
-function TTestMsg1.LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer): Boolean;
+function TTestMsg1.LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer; WireType: integer): Boolean;
 var
   tmpBuf: TProtoBufInput;
 begin
-  Result := inherited LoadSingleFieldFromBuf(ProtoBuf, FieldNumber);
+  Result := inherited LoadSingleFieldFromBuf(ProtoBuf, FieldNumber, WireType);
   if Result then
     exit;
   case fieldNumber of
@@ -220,7 +220,18 @@ begin
       end;
     41:
       begin
-        FFieldArr2List.Add(ProtoBuf.readInt32);
+        if WireType = WIRETYPE_LENGTH_DELIMITED then
+          begin
+            tmpBuf:=ProtoBuf.ReadSubProtoBufInput;
+            try
+              while tmpBuf.getPos<tmpBuf.BufSize do
+                FFieldArr2List.Add(ProtoBuf.readRawVarint32);
+            finally
+              tmpBuf.Free;
+            end;
+          end
+        else
+          FFieldArr2List.Add(ProtoBuf.readRawVarint32);
         Result := True;
       end;
     42:
@@ -260,8 +271,14 @@ begin
   end;
   for i := 0 to FFieldArr1List.Count-1 do
     ProtoBuf.writeInt32(40, FFieldArr1List[i]);
-  for i := 0 to FFieldArr2List.Count-1 do
-    ProtoBuf.writeInt32(41, FFieldArr2List[i]);
+  tmpBuf:=TProtoBufOutput.Create;
+  try
+    for i := 0 to FFieldArr2List.Count-1 do
+      tmpBuf.writeRawVarint32(FFieldArr2List[i]);
+    ProtoBuf.writeMessage(41, tmpBuf);
+  finally
+    tmpBuf.Free;
+  end;
   for i := 0 to FFieldArr3List.Count-1 do
     ProtoBuf.writeString(42, FFieldArr3List[i]);
   FFieldMArr2List.SaveToBuf(ProtoBuf, 44);
