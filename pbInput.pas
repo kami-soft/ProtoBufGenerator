@@ -115,6 +115,7 @@ type
     function ReadSubProtoBufInput: TProtoBufInput;
 
     property BufSize: integer read FLen;
+    property LastTag: integer read FLastTag;
   end;
 
 function decodeZigZag32(n: integer): integer;

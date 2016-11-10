@@ -1,5 +1,5 @@
 unit uAbstractProtoBufClasses;
-
+
 interface
 
 uses
@@ -39,8 +39,13 @@ type
 
   TProtoBufClassList<T: TAbstractProtoBufClass, constructor> = class(TObjectList<T>)
   public
-    procedure AddFromBuf(ProtoBuf: TProtoBufInput; TagValue: integer);
-    procedure SaveToBuf(ProtoBuf: TProtoBufOutput; TagValue: integer);
+    function AddFromBuf(ProtoBuf: TProtoBufInput; FieldNum: integer): Boolean; virtual;
+    procedure SaveToBuf(ProtoBuf: TProtoBufOutput; FieldNumForItems: integer); virtual;
+
+    procedure Assign(ProtoBuf: TProtoBufClassList<T>);
+
+    procedure LoadFromStream(Stream: TStream);
+    procedure SaveToStream(Stream: TStream; FieldNumForItems: integer);
   end;
 
 implementation
@@ -165,12 +170,17 @@ end;
 
 { TProtoBufList<T> }
 
-procedure TProtoBufClassList<T>.AddFromBuf(ProtoBuf: TProtoBufInput; TagValue: integer);
+function TProtoBufClassList<T>.AddFromBuf(ProtoBuf: TProtoBufInput; FieldNum: integer): Boolean;
 var
   tmpBuf: TProtoBufInput;
   Item: T;
 begin
-  ProtoBuf.checkLastTagWas(TagValue);
+  if ProtoBuf.LastTag <> makeTag(FieldNum, WIRETYPE_LENGTH_DELIMITED) then
+    begin
+      Result := False;
+      exit;
+    end;
+
   tmpBuf := ProtoBuf.ReadSubProtoBufInput;
   try
     Item := T.Create;
@@ -184,9 +194,57 @@ begin
   finally
     tmpBuf.Free;
   end;
+  Result := True;
 end;
 
-procedure TProtoBufClassList<T>.SaveToBuf(ProtoBuf: TProtoBufOutput; TagValue: integer);
+procedure TProtoBufClassList<T>.Assign(ProtoBuf: TProtoBufClassList<T>);
+var
+  Stream: TStream;
+begin
+  Stream := TMemoryStream.Create;
+  try
+    ProtoBuf.SaveToStream(Stream, 1);
+    Stream.Seek(0, soBeginning);
+    LoadFromStream(Stream);
+  finally
+    Stream.Free;
+  end;
+end;
+
+procedure TProtoBufClassList<T>.LoadFromStream(Stream: TStream);
+var
+  pb: TProtoBufInput;
+  tmpStream: TStream;
+var
+  FieldNumber: integer;
+  Tag: integer;
+begin
+  Clear;
+  pb := TProtoBufInput.Create;
+  try
+    tmpStream := TMemoryStream.Create;
+    try
+      tmpStream.CopyFrom(Stream, Stream.Size - Stream.Position);
+      tmpStream.Seek(0, soBeginning);
+      pb.LoadFromStream(tmpStream);
+    finally
+      tmpStream.Free;
+    end;
+
+    Tag := pb.readTag;
+    while Tag <> 0 do
+      begin
+        FieldNumber := getTagFieldNumber(Tag);
+        if not AddFromBuf(pb, FieldNumber) then
+          pb.skipField(Tag);
+        Tag := pb.readTag;
+      end;
+  finally
+    pb.Free;
+  end;
+end;
+
+procedure TProtoBufClassList<T>.SaveToBuf(ProtoBuf: TProtoBufOutput; FieldNumForItems: integer);
 var
   i: integer;
   tmpBuf: TProtoBufOutput;
@@ -197,11 +255,25 @@ begin
       begin
         tmpBuf.Clear;
         Items[i].SaveToBuf(tmpBuf);
-        ProtoBuf.writeMessage(TagValue, tmpBuf);
+        ProtoBuf.writeMessage(FieldNumForItems, tmpBuf);
       end;
   finally
     tmpBuf.Free;
   end;
 end;
 
+procedure TProtoBufClassList<T>.SaveToStream(Stream: TStream; FieldNumForItems: integer);
+var
+  pb: TProtoBufOutput;
+begin
+  pb := TProtoBufOutput.Create;
+  try
+    SaveToBuf(pb, FieldNumForItems);
+    pb.SaveToStream(Stream);
+  finally
+    pb.Free;
+  end;
+end;
+
 end.
+
