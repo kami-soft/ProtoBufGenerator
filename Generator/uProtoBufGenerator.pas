@@ -344,7 +344,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
       end;
     SL.Add('  if Result then');
     SL.Add('    exit;');
-    SL.Add('  case fieldNumber of');
+    SL.Add('  case FieldNumber of');
     for i := 0 to ProtoMsg.Count - 1 do
       begin
         Prop := ProtoMsg[i];
@@ -412,7 +412,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
                     SL.Add(Format('        F%s.Add(T%s(ProtoBuf.readEnum));', [DelphiProp.PropertyName, Prop.PropType]));
                 end
               else
-                SL.Add(Format('        F%s.AddFromBuf(ProtoBuf, fieldNumber);', [DelphiProp.PropertyName]));
+                SL.Add(Format('        F%s.AddFromBuf(ProtoBuf, makeTag(FieldNumber, WireType));', [DelphiProp.PropertyName]));
           end;
         SL.Add('        Result := True;');
         SL.Add('      end;');
@@ -594,7 +594,7 @@ procedure TProtoBufGenerator.GenerateInterfaceSection(Proto: TProtoFile; SL: TSt
         SL.Add('    destructor Destroy; override;');
         SL.Add('');
       end;
-    SL.Add('');
+
     for i := 0 to ProtoMsg.Count - 1 do
       begin
         Prop := ProtoMsg[i];

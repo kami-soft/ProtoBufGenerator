@@ -85,7 +85,7 @@ begin
   FTestMsg1.DefField9 := 5.5;
   FTestMsg1.FieldArr1List.Add(-5);
   FTestMsg1.FieldArr2List.Add(234);
-  FTestMsg1.FieldArr3List.Add('asdfçöóêãøò');
+  FTestMsg1.FieldArr3List.Add('asdfçöóêãø?);
 
   tmp := TTestMsg1.Create;
   try

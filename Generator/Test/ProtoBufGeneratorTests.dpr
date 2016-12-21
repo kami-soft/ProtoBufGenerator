@@ -17,6 +17,7 @@ program ProtoBufGeneratorTests;
 uses
   DUnitTestRunner,
   TestuProtoBufParserClasses in 'TestuProtoBufParserClasses.pas',
+  TestuProtoBufGenerator in 'TestuProtoBufGenerator.pas',
   uProtoBufParserClasses in '..\uProtoBufParserClasses.pas',
   uProtoBufParserAbstractClasses in '..\uProtoBufParserAbstractClasses.pas',
   uProtoBufGenerator in '..\uProtoBufGenerator.pas',
