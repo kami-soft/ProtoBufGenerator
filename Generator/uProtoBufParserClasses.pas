@@ -668,7 +668,8 @@ begin
 
       if Buf = 'syntax' then
         begin
-          Buf := Trim(ReadWordFromBuf(Proto, iPos, []));
+          SkipRequiredChar(Proto, iPos, '=');
+          Buf := Trim(ReadWordFromBuf(Proto, iPos, [';']));
           SkipRequiredChar(Proto, iPos, ';');
           if Buf = '"proto3"' then
             FProtoSyntaxVersion := psv3;
