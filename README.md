@@ -1,4 +1,10 @@
 # ProtoBufGenerator
+## Update -- 2016.12.21(jinnblue)
+  1.Fix Generates .pas files bug;
+  2.Add Drop Files feature;
+  3.Add Benchmark Test;
+  
+  
 ## Work in progress! (but you can use it right now)
 Delphi ProtoBuf files generator
 
