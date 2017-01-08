@@ -15,7 +15,7 @@ Limitations:
   // this is correct
   message Sample { // this is correct
     // and this too
-    repeated // this is NOT supported (middle of field declaration)
+    repeated // this is NOT supported (comment in the middle of field declaration)
       sint32 Foo = 1;
     optional string FooString = 2; // this is correct
      ```
@@ -29,10 +29,10 @@ Limitations:
 + open ProtoBufGeneratorGroup.groupproj from root folder of this project
 + compile and run ProtoBufGenerator.exe
 + open .proto file(s) by press "Open" button
-+ select directory for new generated .pas file and press "Generate" button
++ select directory for new generated .pas file(s) and press "Generate" button
 + add generated file to your project.
 
-Do not use `LoadFromBuf`/`SaveToBuf` methods in generated classes! Use `LoadFromStream` and `SaveToStream` methods, which inherited from base class. See Example2, how to use generated classes.
+Do not use `LoadFromBuf`/`SaveToBuf` methods in generated classes! Use `LoadFromStream` and `SaveToStream` methods, which inherited from base class. See `Example2`, how to use generated classes.
 
 ## ToDo:
 - add `extensions` (simple ignore directive, or - wrap to comment)
