@@ -22,6 +22,8 @@ type
     procedure RegisterRequiredField(Tag: integer);
     function IsAllRequiredLoaded: Boolean;
 
+    procedure BeforeLoad; virtual;
+
     function LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer; WireType: integer): Boolean; virtual;
     procedure SaveFieldsToBuf(ProtoBuf: TProtoBufOutput); virtual; abstract;
   public
@@ -41,11 +43,6 @@ type
   public
     function AddFromBuf(ProtoBuf: TProtoBufInput; FieldNum: integer): Boolean; virtual;
     procedure SaveToBuf(ProtoBuf: TProtoBufOutput; FieldNumForItems: integer); virtual;
-
-    procedure Assign(ProtoBuf: TProtoBufClassList<T>);
-
-    procedure LoadFromStream(Stream: TStream);
-    procedure SaveToStream(Stream: TStream; FieldNumForItems: integer);
   end;
 
 implementation
@@ -73,6 +70,11 @@ begin
   finally
     Stream.Free;
   end;
+end;
+
+procedure TAbstractProtoBufClass.BeforeLoad;
+begin
+
 end;
 
 constructor TAbstractProtoBufClass.Create;
@@ -105,6 +107,8 @@ var
   FieldNumber: integer;
   Tag: integer;
 begin
+  BeforeLoad;
+
   Tag := ProtoBuf.readTag;
   while Tag <> 0 do
     begin
@@ -197,53 +201,6 @@ begin
   Result := True;
 end;
 
-procedure TProtoBufClassList<T>.Assign(ProtoBuf: TProtoBufClassList<T>);
-var
-  Stream: TStream;
-begin
-  Stream := TMemoryStream.Create;
-  try
-    ProtoBuf.SaveToStream(Stream, 1);
-    Stream.Seek(0, soBeginning);
-    LoadFromStream(Stream);
-  finally
-    Stream.Free;
-  end;
-end;
-
-procedure TProtoBufClassList<T>.LoadFromStream(Stream: TStream);
-var
-  pb: TProtoBufInput;
-  tmpStream: TStream;
-var
-  FieldNumber: integer;
-  Tag: integer;
-begin
-  Clear;
-  pb := TProtoBufInput.Create;
-  try
-    tmpStream := TMemoryStream.Create;
-    try
-      tmpStream.CopyFrom(Stream, Stream.Size - Stream.Position);
-      tmpStream.Seek(0, soBeginning);
-      pb.LoadFromStream(tmpStream);
-    finally
-      tmpStream.Free;
-    end;
-
-    Tag := pb.readTag;
-    while Tag <> 0 do
-      begin
-        FieldNumber := getTagFieldNumber(Tag);
-        if not AddFromBuf(pb, FieldNumber) then
-          pb.skipField(Tag);
-        Tag := pb.readTag;
-      end;
-  finally
-    pb.Free;
-  end;
-end;
-
 procedure TProtoBufClassList<T>.SaveToBuf(ProtoBuf: TProtoBufOutput; FieldNumForItems: integer);
 var
   i: integer;
@@ -261,7 +218,7 @@ begin
     tmpBuf.Free;
   end;
 end;
-
+{
 procedure TProtoBufClassList<T>.SaveToStream(Stream: TStream; FieldNumForItems: integer);
 var
   pb: TProtoBufOutput;
@@ -274,6 +231,6 @@ begin
     pb.Free;
   end;
 end;
-
+          }
 end.
 

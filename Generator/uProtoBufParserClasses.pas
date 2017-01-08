@@ -668,7 +668,8 @@ begin
 
       if Buf = 'syntax' then
         begin
-          Buf := Trim(ReadWordFromBuf(Proto, iPos, []));
+          SkipRequiredChar(Proto, iPos, '=');
+          Buf := Trim(ReadWordFromBuf(Proto, iPos, [';']));
           SkipRequiredChar(Proto, iPos, ';');
           if Buf = '"proto3"' then
             FProtoSyntaxVersion := psv3;
@@ -697,17 +698,6 @@ begin
         if FProtoBufMessages[i].HasPropertyOfType(FProtoBufMessages[j].Name) then
           FProtoBufMessages.Exchange(i, j);
       end;
-  { FProtoBufMessages.Sort(TComparer<TProtoBufMessage>.Construct(
-    function(const Left, Right: TProtoBufMessage): integer
-    begin
-    if Left.HasPropertyOfType(Right.Name) then
-    Result := 1
-    else
-    if Right.HasPropertyOfType(Left.Name) then
-    Result := -1
-    else
-    Result := 0;
-    end)); }
 end;
 
 procedure TProtoFile.ParseMessage(const Proto: string; var iPos: integer; IsExtension: Boolean);

@@ -111,9 +111,11 @@ type
     procedure TestParseFromProto;
     procedure TestParseFromProto1;
     procedure TestNestedEnum;
+    procedure TestParseSyntaxReservedWord;
   end;
 
 implementation
+
 uses
   System.SysUtils;
 
@@ -419,45 +421,22 @@ begin
     #13#10 + //
     'package test1;'#13#10 + //
     #13#10 + //
-    //'import "TestImport1.proto";'#13#10 + //
-    //#13#10 + //
+  // 'import "TestImport1.proto";'#13#10 + //
+  // #13#10 + //
     '// enumeration'#13#10 + //
     'enum EnumG0 {'#13#10 + //
-    '  // enum value 1'#13#10+
-    'g1 = 1;'#13#10 + //
+    '  // enum value 1'#13#10 + 'g1 = 1;'#13#10 + //
     'g2 = 2;'#13#10 + //
     '}'#13#10;
-  Proto:=Proto +
-  'message TestMsg1 {' + #13#10 +
-  '' + #13#10 +
-    '// fields with defaults' + #13#10 +
-    'optional int32   DefField1  = 1  [default = 2];'#13#10 +
-    'optional int64   DefField2  = 2  [default = -1];'#13#10 +
-    'message NestedMsg0 { '#13#10+
-    '    optional int32 NestedField1 = 1; }'+
-    'optional string  DefField3  = 3  [default = "yes it is"];'#13#10 +
-    'optional double  DefField4  = 4  [default = 1.1];'#13#10 +
-    'optional bool    DefField5  = 5  [default = true];'#13#10 +
-    'optional EnumG0  DefField6  = 6  [default = g2];'#13#10 +
-    'optional sint64  DefField7  = 7  [default = 100];'#13#10 +
-    'optional fixed32 DefField8  = 8  [default = 1];'#13#10 +
-    'optional float   DefField9  = 9  [default = 1.23e1];'#13#10 +
-    ''#13#10 +
-    '// field of message type'#13#10 +
-    'optional NestedMsg0 FieldMsg0  = 20;'#13#10 +
-    ''#13#10 +
-    '// repeated fields'#13#10 +
-    'repeated int32    FieldArr1  = 40;'#13#10 +
-    'repeated int32    FieldArr2  = 41 [packed = true];'#13#10 +
-    'repeated string   FieldArr3  = 42;'#13#10 +
-    'repeated Enum1    FieldArrE1 = 43;'#13#10 +
-    'repeated TestMsg0 FieldMArr2 = 44;'#13#10 +
-    ''#13#10 +
-    '// fields of imported types'#13#10 +
-    'optional EnumGlobal             FieldImp2 = 51;'#13#10 +
-    ''#13#10 +
-    '// extensions 1000 to 1999;'#13#10 +
-    '}';
+  Proto := Proto + 'message TestMsg1 {' + #13#10 + '' + #13#10 + '// fields with defaults' + #13#10 + 'optional int32   DefField1  = 1  [default = 2];'#13#10 +
+    'optional int64   DefField2  = 2  [default = -1];'#13#10 + 'message NestedMsg0 { '#13#10 + '    optional int32 NestedField1 = 1; }' +
+    'optional string  DefField3  = 3  [default = "yes it is"];'#13#10 + 'optional double  DefField4  = 4  [default = 1.1];'#13#10 +
+    'optional bool    DefField5  = 5  [default = true];'#13#10 + 'optional EnumG0  DefField6  = 6  [default = g2];'#13#10 +
+    'optional sint64  DefField7  = 7  [default = 100];'#13#10 + 'optional fixed32 DefField8  = 8  [default = 1];'#13#10 +
+    'optional float   DefField9  = 9  [default = 1.23e1];'#13#10 + ''#13#10 + '// field of message type'#13#10 + 'optional NestedMsg0 FieldMsg0  = 20;'#13#10 +
+    ''#13#10 + '// repeated fields'#13#10 + 'repeated int32    FieldArr1  = 40;'#13#10 + 'repeated int32    FieldArr2  = 41 [packed = true];'#13#10 +
+    'repeated string   FieldArr3  = 42;'#13#10 + 'repeated Enum1    FieldArrE1 = 43;'#13#10 + 'repeated TestMsg0 FieldMArr2 = 44;'#13#10 + ''#13#10 +
+    '// fields of imported types'#13#10 + 'optional EnumGlobal             FieldImp2 = 51;'#13#10 + ''#13#10 + '// extensions 1000 to 1999;'#13#10 + '}';
 
   iPos := 1;
   FProtoFile.ParseFromProto(Proto, iPos);
@@ -470,6 +449,8 @@ begin
   CheckEquals(1, FProtoFile.ProtoBufMessages[0].Count);
   CheckEquals('TestMsg1', FProtoFile.ProtoBufMessages[1].Name);
   CheckEquals(16, FProtoFile.ProtoBufMessages[1].Count);
+
+  // all others check tested in TestuProtoBufParserClasses.pas
 end;
 
 procedure TestTProtoFile.TestParseFromProto;
@@ -481,16 +462,15 @@ begin
     #13#10 + //
     'package test1;'#13#10 + //
     #13#10 + //
-    //'import "TestImport1.proto";'#13#10 + //
-    //#13#10 + //
+  // 'import "TestImport1.proto";'#13#10 + //
+  // #13#10 + //
     '// enumeration'#13#10 + //
     'enum EnumG0 {'#13#10 + //
-    '  // enum value 1'#13#10+
-    'g1 = 1;'#13#10 + //
+    '  // enum value 1'#13#10 + 'g1 = 1;'#13#10 + //
     'g2 = 2;'#13#10 + //
     '};';
   iPos := 1;
-  FProtoFile.FileName:=ChangeFileExt(ParamStr(0), '.proto');
+  FProtoFile.FileName := ChangeFileExt(ParamStr(0), '.proto');
   FProtoFile.ParseFromProto(Proto, iPos);
 
   CheckEquals('test1', FProtoFile.Name);
@@ -507,43 +487,22 @@ begin
     #13#10 + //
     'package test1;'#13#10 + //
     #13#10 + //
-    //'import "TestImport1.proto";'#13#10 + //
-    //#13#10 + //
+  // 'import "TestImport1.proto";'#13#10 + //
+  // #13#10 + //
     '// enumeration'#13#10 + //
     'enum EnumG0 {'#13#10 + //
-    '  // enum value 1'#13#10+
-    'g1 = 1;'#13#10 + //
+    '  // enum value 1'#13#10 + 'g1 = 1;'#13#10 + //
     'g2 = 2;'#13#10 + //
     '}'#13#10;
-  Proto:=Proto +
-  'message TestMsg1 {' + #13#10 +
-  '' + #13#10 +
-    '// fields with defaults' + #13#10 +
-    'optional int32   DefField1  = 1  [default = 2];' + #13#10 +
-    'optional int64   DefField2  = 2  [default = -1];' + #13#10 +
-    'optional string  DefField3  = 3  [default = "yes it is"];' + #13#10 +
-    'optional double  DefField4  = 4  [default = 1.1];' + #13#10 +
-    'optional bool    DefField5  = 5  [default = true];' + #13#10 +
-    'optional EnumG0  DefField6  = 6  [default = g2];' + #13#10 +
-    'optional sint64  DefField7  = 7  [default = 100];' + #13#10 +
-    'optional fixed32 DefField8  = 8  [default = 1];' + #13#10 +
-    'optional float   DefField9  = 9  [default = 1.23e1];' + #13#10 +
-    '' + #13#10 +
-    '// field of message type' + #13#10 +
-    'optional TestMsg0 FieldMsg1  = 20;' + #13#10 +
-    '' + #13#10 +
-    '// repeated fields' + #13#10 +
-    'repeated int32    FieldArr1  = 40;' + #13#10 +
-    'repeated int32    FieldArr2  = 41 [packed = true];' + #13#10 +
-    'repeated string   FieldArr3  = 42;' + #13#10 +
-    'repeated Enum1    FieldArrE1 = 43;' + #13#10 +
-    'repeated TestMsg0 FieldMArr2 = 44;' + #13#10 +
-    '' + #13#10 +
-    '// fields of imported types' + #13#10 +
-    'optional EnumGlobal             FieldImp2 = 51;' + #13#10 +
-    '' + #13#10 +
-    '// extensions 1000 to 1999;' + #13#10 +
-    '}';
+  Proto := Proto + 'message TestMsg1 {' + #13#10 + '' + #13#10 + '// fields with defaults' + #13#10 + 'optional int32   DefField1  = 1  [default = 2];' + #13#10
+    + 'optional int64   DefField2  = 2  [default = -1];' + #13#10 + 'optional string  DefField3  = 3  [default = "yes it is"];' + #13#10 +
+    'optional double  DefField4  = 4  [default = 1.1];' + #13#10 + 'optional bool    DefField5  = 5  [default = true];' + #13#10 +
+    'optional EnumG0  DefField6  = 6  [default = g2];' + #13#10 + 'optional sint64  DefField7  = 7  [default = 100];' + #13#10 +
+    'optional fixed32 DefField8  = 8  [default = 1];' + #13#10 + 'optional float   DefField9  = 9  [default = 1.23e1];' + #13#10 + '' + #13#10 +
+    '// field of message type' + #13#10 + 'optional TestMsg0 FieldMsg1  = 20;' + #13#10 + '' + #13#10 + '// repeated fields' + #13#10 +
+    'repeated int32    FieldArr1  = 40;' + #13#10 + 'repeated int32    FieldArr2  = 41 [packed = true];' + #13#10 + 'repeated string   FieldArr3  = 42;' +
+    #13#10 + 'repeated Enum1    FieldArrE1 = 43;' + #13#10 + 'repeated TestMsg0 FieldMArr2 = 44;' + #13#10 + '' + #13#10 + '// fields of imported types' +
+    #13#10 + 'optional EnumGlobal             FieldImp2 = 51;' + #13#10 + '' + #13#10 + '// extensions 1000 to 1999;' + #13#10 + '}';
 
   iPos := 1;
   FProtoFile.ParseFromProto(Proto, iPos);
@@ -554,6 +513,33 @@ begin
   CheckEquals(1, FProtoFile.ProtoBufMessages.Count);
   CheckEquals('TestMsg1', FProtoFile.ProtoBufMessages[0].Name);
   CheckEquals(16, FProtoFile.ProtoBufMessages[0].Count);
+end;
+
+procedure TestTProtoFile.TestParseSyntaxReservedWord;
+var
+  Proto: string;
+  iPos: Integer;
+begin
+  Proto := 'syntax = "proto3";'#13#10 + //
+    ' //   * Bytes type e.g. optional bytes   DefField10 = 10 [default = "123"];'#13#10 + //
+    #13#10 + //
+    'package test1;'#13#10 + //
+    #13#10 + //
+    '// enumeration'#13#10 + //
+    'enum EnumG0 {'#13#10 + //
+    '  // enum value 1'#13#10 + //
+    'g1 = 1;'#13#10 + //
+    'g2 = 2;'#13#10 + //
+    '}';
+  iPos := 1;
+  FProtoFile.ParseFromProto(Proto, iPos);
+
+  CheckTrue(FProtoFile.ProtoSyntaxVersion = psv3);
+  CheckEquals('test1', FProtoFile.Name);
+  CheckEquals(1, FProtoFile.ProtoBufEnums.Count);
+  CheckEquals('EnumG0', FProtoFile.ProtoBufEnums[0].Name);
+  CheckEquals(0, FProtoFile.ProtoBufMessages.Count);
+  // all others check tested in another tests in TestuProtoBufParserClasses.pas
 end;
 
 initialization

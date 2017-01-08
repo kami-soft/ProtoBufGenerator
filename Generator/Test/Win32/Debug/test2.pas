@@ -232,7 +232,7 @@ begin
             tmpBuf:=ProtoBuf.ReadSubProtoBufInput;
             try
               while tmpBuf.getPos<tmpBuf.BufSize do
-                FFieldArr2List.Add(ProtoBuf.readRawVarint32);
+                FFieldArr2List.Add(tmpBuf.readRawVarint32);
             finally
               tmpBuf.Free;
             end;

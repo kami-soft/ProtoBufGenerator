@@ -55,19 +55,18 @@ type
     procedure writeFixed32(fieldNumber: integer; value: integer);
     (* Write a boolean field, including tag. *)
     procedure writeRawBoolean(value: Boolean);
-    procedure writeBoolean(fieldNumber: integer; value: boolean);
+    procedure writeBoolean(fieldNumber: integer; value: Boolean);
     (* Write a string field, including tag. *)
     procedure writeString(fieldNumber: integer; const value: string);
-    {* Write a bytes field, including tag. *}
+    { * Write a bytes field, including tag. * }
     procedure writeBytes(fieldNumber: integer; const value: TBytes);
     (* Write a message field, including tag. *)
     procedure writeMessage(fieldNumber: integer; const value: IpbMessage);
     (* Write a unsigned int32 field, including tag. *)
     procedure writeUInt32(fieldNumber: integer; value: cardinal);
 
-
-    procedure writeRawSInt32(value: Integer);
-    procedure writeRawSInt64(value: Int64);
+    procedure writeRawSInt32(value: integer);
+    procedure writeRawSInt64(value: int64);
     procedure writeSInt32(fieldNumber: integer; value: integer);
     procedure writeSInt64(fieldNumber: integer; value: int64);
     (* Get serialized size *)
@@ -151,15 +150,15 @@ end;
 
 procedure TProtoBufOutput.writeRawData(const buf; size: integer);
 begin
-  FBuffer.Add(@Buf, size);
+  FBuffer.Add(@buf, size);
 end;
 
-procedure TProtoBufOutput.writeRawSInt32(value: Integer);
+procedure TProtoBufOutput.writeRawSInt32(value: integer);
 begin
   writeRawVarint32(EncodeZigZag32(value));
 end;
 
-procedure TProtoBufOutput.writeRawSInt64(value: Int64);
+procedure TProtoBufOutput.writeRawSInt64(value: int64);
 begin
   writeRawVarint64(EncodeZigZag64(value));
 end;
@@ -200,7 +199,7 @@ begin
   until value = 0;
 end;
 
-procedure TProtoBufOutput.writeBoolean(fieldNumber: integer; value: boolean);
+procedure TProtoBufOutput.writeBoolean(fieldNumber: integer; value: Boolean);
 begin
   writeTag(fieldNumber, WIRETYPE_VARINT);
   writeRawBoolean(value);
@@ -264,13 +263,13 @@ end;
 
 procedure TProtoBufOutput.writeString(fieldNumber: integer; const value: string);
 var
-  Buf: TBytes;
+  buf: TBytes;
 begin
   writeTag(fieldNumber, WIRETYPE_LENGTH_DELIMITED);
-  Buf := TEncoding.UTF8.GetBytes(value);
-  writeRawVarint32(length(Buf));
-  if length(Buf) > 0 then
-    FBuffer.Add(@Buf[0], length(Buf));
+  buf := TEncoding.UTF8.GetBytes(value);
+  writeRawVarint32(length(buf));
+  if length(buf) > 0 then
+    FBuffer.Add(@buf[0], length(buf));
 end;
 
 procedure TProtoBufOutput.writeUInt32(fieldNumber: integer; value: cardinal);
