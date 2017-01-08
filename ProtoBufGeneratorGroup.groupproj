@@ -9,6 +9,9 @@
         <Projects Include="Generator\Test\ProtoBufGeneratorTests.dproj">
             <Dependencies/>
         </Projects>
+        <Projects Include="example2_with_Generator\ProjectExample2.dproj">
+            <Dependencies/>
+        </Projects>
     </ItemGroup>
     <ProjectExtensions>
         <Borland.Personality>Default.Personality.12</Borland.Personality>
@@ -35,14 +38,23 @@
     <Target Name="ProtoBufGeneratorTests:Make">
         <MSBuild Projects="Generator\Test\ProtoBufGeneratorTests.dproj" Targets="Make"/>
     </Target>
+    <Target Name="ProjectExample2">
+        <MSBuild Projects="example2_with_Generator\ProjectExample2.dproj"/>
+    </Target>
+    <Target Name="ProjectExample2:Clean">
+        <MSBuild Projects="example2_with_Generator\ProjectExample2.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="ProjectExample2:Make">
+        <MSBuild Projects="example2_with_Generator\ProjectExample2.dproj" Targets="Make"/>
+    </Target>
     <Target Name="Build">
-        <CallTarget Targets="ProtoBufGenerator;ProtoBufGeneratorTests"/>
+        <CallTarget Targets="ProtoBufGenerator;ProtoBufGeneratorTests;ProjectExample2"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="ProtoBufGenerator:Clean;ProtoBufGeneratorTests:Clean"/>
+        <CallTarget Targets="ProtoBufGenerator:Clean;ProtoBufGeneratorTests:Clean;ProjectExample2:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="ProtoBufGenerator:Make;ProtoBufGeneratorTests:Make"/>
+        <CallTarget Targets="ProtoBufGenerator:Make;ProtoBufGeneratorTests:Make;ProjectExample2:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

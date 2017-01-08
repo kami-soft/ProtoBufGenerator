@@ -30,9 +30,9 @@ type
     procedure SetUp; override;
     procedure TearDown; override;
   published
+    procedure TestZigZag32;
+    procedure TestZigZag64;
     procedure TestGenerate;
-    procedure TestGenerate1;
-    procedure TestGenerate2;
     procedure TestGenerateMsgWithBytes;
   end;
 
@@ -52,7 +52,7 @@ begin
   FProtoBufGenerator := nil;
 end;
 
-procedure TestTProtoBufGenerator.TestGenerate;
+procedure TestTProtoBufGenerator.TestZigZag32;
 var
   i: Integer;
   sI32: integer;
@@ -66,7 +66,7 @@ begin
   // TODO: Validate method results
 end;
 
-procedure TestTProtoBufGenerator.TestGenerate1;
+procedure TestTProtoBufGenerator.TestZigZag64;
 var
   i: Int64;
   sI64: Int64;
@@ -77,7 +77,7 @@ begin
   CheckEquals(3, i);
 end;
 
-procedure TestTProtoBufGenerator.TestGenerate2;
+procedure TestTProtoBufGenerator.TestGenerate;
 var
   OutputDir: string;
   Proto: TProtoFile;
@@ -106,7 +106,7 @@ begin
     '// fields with defaults' + #13#10 +
     'optional int32   DefField1  = 1  [default = 2];' + #13#10 +
     'required int64   DefField2  = 2  [default = -1];' + #13#10 +
-    'optional string  DefField3  = 3  [default = "yes ""it is"];' + #13#10 +
+    'optional string  DefField3  = 3  [default = "yes ''""it is"];' + #13#10 +
     'optional double  DefField4  = 4  [default = 1.1];' + #13#10 +
     'optional bool    DefField5  = 5  [default = true];' + #13#10 +
     'optional EnumG0  DefField6  = 6  [default = g2];' + #13#10 +

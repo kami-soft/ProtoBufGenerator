@@ -23,6 +23,7 @@ type
     function IsAllRequiredLoaded: Boolean;
 
     procedure BeforeLoad; virtual;
+    procedure AfterLoad; virtual;
 
     function LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer; WireType: integer): Boolean; virtual;
     procedure SaveFieldsToBuf(ProtoBuf: TProtoBufOutput); virtual; abstract;
@@ -56,6 +57,11 @@ procedure TAbstractProtoBufClass.AddLoadedField(Tag: integer);
 begin
   if FRequiredFields.ContainsKey(Tag) then
     FRequiredFields[Tag] := True;
+end;
+
+procedure TAbstractProtoBufClass.AfterLoad;
+begin
+
 end;
 
 procedure TAbstractProtoBufClass.Assign(ProtoBuf: TAbstractProtoBufClass);
@@ -121,6 +127,8 @@ begin
     end;
   if not IsAllRequiredLoaded then
     raise EStreamError.Create('not enought fields');
+
+  AfterLoad;
 end;
 
 procedure TAbstractProtoBufClass.LoadFromStream(Stream: TStream);
@@ -218,19 +226,6 @@ begin
     tmpBuf.Free;
   end;
 end;
-{
-procedure TProtoBufClassList<T>.SaveToStream(Stream: TStream; FieldNumForItems: integer);
-var
-  pb: TProtoBufOutput;
-begin
-  pb := TProtoBufOutput.Create;
-  try
-    SaveToBuf(pb, FieldNumForItems);
-    pb.SaveToStream(Stream);
-  finally
-    pb.Free;
-  end;
-end;
-          }
+
 end.
 
