@@ -55,7 +55,6 @@ end;
 
 procedure TfmMain.btnGenerateClick(Sender: TObject);
 var
-  Gen: TProtoBufGenerator;
   FileNames: TStrings;
 begin
   FileNames := TStringList.Create;
@@ -80,7 +79,7 @@ var
   Gen: TProtoBufGenerator;
   i: Integer;
 begin
-  ForceDirectories(OutputDir);
+  System.SysUtils.ForceDirectories(OutputDir);
   Gen := TProtoBufGenerator.Create;
   try
     for i := 0 to SourceFiles.Count - 1 do
