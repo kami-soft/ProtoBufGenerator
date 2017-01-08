@@ -28,6 +28,7 @@ type
     procedure btnGenerateClick(Sender: TObject);
   private
     { Private declarations }
+    procedure Generate(SourceFiles: TStrings; const OutputDir: string);
   public
     { Public declarations }
   end;
@@ -55,19 +56,38 @@ end;
 procedure TfmMain.btnGenerateClick(Sender: TObject);
 var
   Gen: TProtoBufGenerator;
+  FileNames: TStrings;
 begin
-  Gen:=TProtoBufGenerator.Create;
+  FileNames := TStringList.Create;
   try
-    Gen.Generate(edProtoFileName.Text, edOutputFolder.Text, TEncoding.UTF8);
+    FileNames.Delimiter:=odProtoFile.Files.Delimiter;
+    FileNames.DelimitedText:=edProtoFileName.Text;
+    Generate(FileNames, edOutputFolder.Text);
+    ShowMessage('Complete! Take a look into output directory');
   finally
-    Gen.Free;
+    FileNames.Free;
   end;
 end;
 
 procedure TfmMain.btnOpenProtoFileClick(Sender: TObject);
 begin
   if odProtoFile.Execute then
-    edProtoFileName.Text := odProtoFile.FileName;
+    edProtoFileName.Text := odProtoFile.Files.DelimitedText;
+end;
+
+procedure TfmMain.Generate(SourceFiles: TStrings; const OutputDir: string);
+var
+  Gen: TProtoBufGenerator;
+  i: Integer;
+begin
+  ForceDirectories(OutputDir);
+  Gen := TProtoBufGenerator.Create;
+  try
+    for i := 0 to SourceFiles.Count - 1 do
+      Gen.Generate(SourceFiles[i], edOutputFolder.Text, TEncoding.UTF8);
+  finally
+    Gen.Free;
+  end;
 end;
 
 end.

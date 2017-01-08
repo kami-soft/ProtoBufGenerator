@@ -65,8 +65,7 @@ begin
       Result := 'TBytes';
   else
     i := LastDelimiter('.', PropTypeName);
-    Result := PropTypeName;
-    Insert('T', Result, i + 1);
+    Result := 'T'+Copy(PropTypeName, i+1, Length(PropTypeName));
   end;
 end;
 
@@ -567,12 +566,10 @@ procedure TProtoBufGenerator.GenerateInterfaceSection(Proto: TProtoFile; SL: TSt
     i: integer;
     Prop: TProtoBufProperty;
     DelphiProp: TDelphiProperty;
-    bNeedConstructor: Boolean;
     s, sdefValue: string;
   begin
     if ProtoMsg.IsImported then
       Exit;
-    bNeedConstructor := False;
     if ProtoMsg.ExtendOf = '' then
       s := 'AbstractProtoBufClass'
     else
@@ -585,14 +582,13 @@ procedure TProtoBufGenerator.GenerateInterfaceSection(Proto: TProtoFile; SL: TSt
         ParsePropType(Prop, Proto, DelphiProp);
         s := Format('    F%s: %s;', [DelphiProp.PropertyName, DelphiProp.PropertyType]);
         SL.Add(s);
-        bNeedConstructor := bNeedConstructor or DelphiProp.IsList or DelphiProp.isObject or Prop.PropOptions.HasValue['default'];
       end;
     SL.Add('  strict protected');
     SL.Add('    function LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer; WireType: integer): Boolean; override;');
     SL.Add('    procedure SaveFieldsToBuf(ProtoBuf: TProtoBufOutput); override;');
 
     SL.Add('  public');
-    if bNeedConstructor then
+    if MsgNeedConstructor(ProtoMsg, Proto) then
       begin
         SL.Add('    constructor Create; override;');
         SL.Add('    destructor Destroy; override;');

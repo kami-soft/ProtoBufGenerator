@@ -40,6 +40,7 @@ object fmMain: TfmMain
     Top = 80
     Width = 442
     Height = 66
+    Anchors = [akLeft, akTop, akRight, akBottom]
     Caption = 'Generate'
     TabOrder = 2
     OnClick = btnGenerateClick
@@ -72,8 +73,8 @@ object fmMain: TfmMain
         DisplayName = 'ProtoBuf files'
         FileMask = '*.proto'
       end>
-    Options = [fdoStrictFileTypes, fdoPathMustExist, fdoFileMustExist]
-    Title = 'Open ProtoBuf file'
+    Options = [fdoStrictFileTypes, fdoAllowMultiSelect, fdoPathMustExist, fdoFileMustExist]
+    Title = 'Open ProtoBuf file(s)'
     Left = 296
     Top = 16
   end
