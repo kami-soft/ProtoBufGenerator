@@ -6,6 +6,9 @@
         <Projects Include="Generator\ProtoBufGenerator.dproj">
             <Dependencies/>
         </Projects>
+        <Projects Include="Generator\ProtoBufGeneratorConsole.dproj">
+            <Dependencies/>
+        </Projects>
         <Projects Include="Generator\Test\ProtoBufGeneratorTests.dproj">
             <Dependencies/>
         </Projects>
@@ -29,6 +32,15 @@
     <Target Name="ProtoBufGenerator:Make">
         <MSBuild Projects="Generator\ProtoBufGenerator.dproj" Targets="Make"/>
     </Target>
+    <Target Name="ProtoBufGeneratorConsole">
+        <MSBuild Projects="Generator\ProtoBufGeneratorConsole.dproj"/>
+    </Target>
+    <Target Name="ProtoBufGeneratorConsole:Clean">
+        <MSBuild Projects="Generator\ProtoBufGeneratorConsole.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="ProtoBufGeneratorConsole:Make">
+        <MSBuild Projects="Generator\ProtoBufGeneratorConsole.dproj" Targets="Make"/>
+    </Target>
     <Target Name="ProtoBufGeneratorTests">
         <MSBuild Projects="Generator\Test\ProtoBufGeneratorTests.dproj"/>
     </Target>
@@ -48,13 +60,13 @@
         <MSBuild Projects="example2_with_Generator\ProjectExample2.dproj" Targets="Make"/>
     </Target>
     <Target Name="Build">
-        <CallTarget Targets="ProtoBufGenerator;ProtoBufGeneratorTests;ProjectExample2"/>
+        <CallTarget Targets="ProtoBufGenerator;ProtoBufGeneratorConsole;ProtoBufGeneratorTests;ProjectExample2"/>
     </Target>
     <Target Name="Clean">
-        <CallTarget Targets="ProtoBufGenerator:Clean;ProtoBufGeneratorTests:Clean;ProjectExample2:Clean"/>
+        <CallTarget Targets="ProtoBufGenerator:Clean;ProtoBufGeneratorConsole:Clean;ProtoBufGeneratorTests:Clean;ProjectExample2:Clean"/>
     </Target>
     <Target Name="Make">
-        <CallTarget Targets="ProtoBufGenerator:Make;ProtoBufGeneratorTests:Make;ProjectExample2:Make"/>
+        <CallTarget Targets="ProtoBufGenerator:Make;ProtoBufGeneratorConsole:Make;ProtoBufGeneratorTests:Make;ProjectExample2:Make"/>
     </Target>
     <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
 </Project>

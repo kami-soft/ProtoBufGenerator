@@ -1,6 +1,12 @@
 # ProtoBufGenerator
-## Work in progress! (but you can use it right now)
+
 Delphi ProtoBuf files generator
+
+### Update 14.01.2017
+Add console generator version
+
+### Update 08.01.2017
+Add example
 
 Work with binary ProtoBuf messages based on https://sourceforge.net/projects/protobuf-delphi/files/ by marat1961 (sources have some modifications)
 
@@ -37,4 +43,3 @@ Do not use `LoadFromBuf`/`SaveToBuf` methods in generated classes! Use `LoadFrom
 ## ToDo:
 - add `extensions` (simple ignore directive, or - wrap to comment)
 - add tests with "original" ProtoBuf generated binary messages.
-- add console generator version
