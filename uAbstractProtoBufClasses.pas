@@ -33,7 +33,7 @@ type
 
     procedure Assign(ProtoBuf: TAbstractProtoBufClass);
 
-    procedure LoadFromMem(const Mem: Pointer; const Size: Int64; const OwnsMem: Boolean = False);
+    procedure LoadFromMem(const Mem: Pointer; const Size: Integer; const OwnsMem: Boolean = False);
     procedure LoadFromStream(Stream: TStream);
     procedure SaveToStream(Stream: TStream);
 
@@ -132,7 +132,7 @@ begin
   AfterLoad;
 end;
 
-procedure TAbstractProtoBufClass.LoadFromMem(const Mem: Pointer; const Size: Int64; const OwnsMem: Boolean);
+procedure TAbstractProtoBufClass.LoadFromMem(const Mem: Pointer; const Size: Integer; const OwnsMem: Boolean);
 var
   pb: TProtoBufInput;
 begin
