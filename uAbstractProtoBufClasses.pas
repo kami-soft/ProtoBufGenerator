@@ -33,6 +33,7 @@ type
 
     procedure Assign(ProtoBuf: TAbstractProtoBufClass);
 
+    procedure LoadFromMem(const Mem: Pointer; const Size: Integer; const OwnsMem: Boolean = False);
     procedure LoadFromStream(Stream: TStream);
     procedure SaveToStream(Stream: TStream);
 
@@ -129,6 +130,18 @@ begin
     raise EStreamError.Create('not enought fields');
 
   AfterLoad;
+end;
+
+procedure TAbstractProtoBufClass.LoadFromMem(const Mem: Pointer; const Size: Integer; const OwnsMem: Boolean);
+var
+  pb: TProtoBufInput;
+begin
+  pb := TProtoBufInput.Create(Mem, Size, OwnsMem);
+  try
+    LoadFromBuf(pb);
+  finally
+    pb.Free;
+  end;
 end;
 
 procedure TAbstractProtoBufClass.LoadFromStream(Stream: TStream);
