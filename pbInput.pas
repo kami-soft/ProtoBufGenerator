@@ -178,7 +178,7 @@ end;
 
 function TProtoBufInput.readTag: integer;
 begin
-  if FPos <= FLen then
+  if FPos < FLen then
     FLastTag := readRawVarint32
   else
     FLastTag := 0;
