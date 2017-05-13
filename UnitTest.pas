@@ -155,17 +155,17 @@ begin
   Assert(-1 = decodeZigZag64(1));
   Assert( 1 = decodeZigZag64(2));
   Assert(-2 = decodeZigZag64(3));
-  Assert($000000003FFFFFFF = decodeZigZag64($000000007FFFFFFE));
-  Assert($FFFFFFFFC0000000 = decodeZigZag64($000000007FFFFFFF));
-  Assert($000000007FFFFFFF = decodeZigZag64($00000000FFFFFFFE));
-  Assert($FFFFFFFF80000000 = decodeZigZag64($00000000FFFFFFFF));
-  Assert($7FFFFFFFFFFFFFFF = decodeZigZag64($FFFFFFFFFFFFFFFE));
-  Assert($8000000000000000 = decodeZigZag64($FFFFFFFFFFFFFFFF));
+  Assert(Int64($000000003FFFFFFF) = decodeZigZag64($000000007FFFFFFE));
+  Assert(Int64($FFFFFFFFC0000000) = decodeZigZag64($000000007FFFFFFF));
+  Assert(Int64($000000007FFFFFFF) = decodeZigZag64($00000000FFFFFFFE));
+  Assert(Int64($FFFFFFFF80000000) = decodeZigZag64($00000000FFFFFFFF));
+  Assert(Int64($7FFFFFFFFFFFFFFF) = decodeZigZag64($FFFFFFFFFFFFFFFE));
+  Assert(Int64($8000000000000000) = decodeZigZag64($FFFFFFFFFFFFFFFF));
 end;
 
 procedure TestReadString;
 const
-  TEST_string  = AnsiString('Тестовая строка');
+  TEST_string  = 'Тестовая строка';
   TEST_integer = 12345678;
   TEST_single  = 12345.123;
   TEST_double  = 1234567890.123;
@@ -173,7 +173,7 @@ var
   out_pb: TProtoBufOutput;
   in_pb: TProtoBufInput;
   tag, t: integer;
-  text: AnsiString;
+  text: string;
   int: integer;
   dbl: double;
   flt: single;
