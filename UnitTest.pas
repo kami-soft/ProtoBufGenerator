@@ -20,6 +20,8 @@ procedure TestAll;
 
 implementation
 
+uses Classes;
+
 procedure TestVarint;
 type
   TVarintCase = record
@@ -234,6 +236,44 @@ begin
   end;
 end;
 
+procedure TestReadTag;
+var
+  out_pb: TProtoBufOutput;
+  in_pb: TProtoBufInput;
+  tag, t: integer;
+  tmp: TMemoryStream;
+  data_size: Integer;
+  garbage: Cardinal;
+begin
+  tmp := TMemoryStream.Create;
+  try
+    out_pb := TProtoBufOutput.Create;
+    try
+      out_pb.writeSInt32(1, 150);
+      out_pb.SaveToStream(tmp);
+    finally
+      out_pb.Free;
+    end;
+
+    data_size := tmp.Size;
+    garbage := $BADBAD;
+    tmp.WriteBuffer(garbage, SizeOf(garbage));
+
+    in_pb := TProtoBufInput.Create(tmp.Memory, data_size);
+    try
+      tag := makeTag(1, WIRETYPE_VARINT);
+      t := in_pb.readTag;
+      Assert(tag = t);
+      Assert(in_pb.readSInt32 = 150);
+      Assert(in_pb.readTag = 0);
+    finally
+      in_pb.Free;
+    end;
+  finally
+    tmp.Free;
+  end;
+end;
+
 procedure TestAll;
 begin
   TestVarint;
@@ -242,6 +282,7 @@ begin
   TestDecodeZigZag;
   TestReadString;
   TestMemoryLeak;
+  TestReadTag;
 end;
 
 end.
