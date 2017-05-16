@@ -15,11 +15,6 @@ program ProtoBufGeneratorTests;
 {$ENDIF}
 
 uses
-  madExcept,
-  madLinkDisAsm,
-  madListHardware,
-  madListProcesses,
-  madListModules,
   DUnitTestRunner,
   TestuProtoBufParserClasses in 'TestuProtoBufParserClasses.pas',
   uProtoBufParserClasses in '..\uProtoBufParserClasses.pas',
@@ -30,7 +25,8 @@ uses
   pbOutput in '..\..\pbOutput.pas',
   pbPublic in '..\..\pbPublic.pas',
   StrBuffer in '..\..\StrBuffer.pas',
-  TestuProtoBufGenerator in 'TestuProtoBufGenerator.pas';
+  TestuProtoBufGenerator in 'TestuProtoBufGenerator.pas',
+  TestProtoBuf in 'TestProtoBuf.pas';
 
 {R *.RES}
 
