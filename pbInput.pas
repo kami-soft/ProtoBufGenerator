@@ -41,6 +41,10 @@ type
     FRecursionDepth: integer;
     FLastTag: integer;
     FOwnObject: boolean;
+    procedure FreeBuffer;
+
+    // Set buffer posititon
+    procedure setPos(aPos: integer);
   public
     constructor Create; overload;
     constructor Create(buf: PAnsiChar; len: integer; aOwnsObjects: boolean = false); overload;
@@ -50,8 +54,6 @@ type
     procedure SaveToFile(const FileName: string);
     procedure LoadFromFile(const FileName: string);
     procedure LoadFromStream(Stream: TStream);
-    // Set buffer posititon
-    procedure setPos(aPos: integer);
     // Get buffer posititon
     function getPos: integer;
     // Attempt to read a field tag, returning zero if we have reached EOF.
@@ -143,37 +145,40 @@ end;
 constructor TProtoBufInput.Create;
 begin
   inherited Create;
-  FPos := 0;
-  FLen := 256;
-  GetMem(FBuffer, FLen);
   FSizeLimit := DEFAULT_SIZE_LIMIT;
   FRecursionDepth := DEFAULT_RECURSION_LIMIT;
-  FOwnObject := true;
 end;
 
 constructor TProtoBufInput.Create(buf: PAnsiChar; len: integer; aOwnsObjects: boolean);
 begin
-  inherited Create;
+  Create;
+
+  FreeBuffer;
+
   if not aOwnsObjects then
     FBuffer := buf
   else
     begin
       // allocate a buffer and copy the data
-      FBuffer := AllocMem(len + 1);
+      FBuffer := AllocMem(len);
       Move(buf^, FBuffer^, len);
     end;
   FPos := 0;
   FLen := len;
-  FSizeLimit := DEFAULT_SIZE_LIMIT;
-  FRecursionDepth := DEFAULT_RECURSION_LIMIT;
   FOwnObject := aOwnsObjects;
 end;
 
 destructor TProtoBufInput.Destroy;
 begin
+  FreeBuffer;
+  inherited;
+end;
+
+procedure TProtoBufInput.FreeBuffer;
+begin
   if FOwnObject then
-    FreeMem(FBuffer, FLen);
-  inherited Destroy;
+    FreeMem(FBuffer);
+  FBuffer := nil;
 end;
 
 function TProtoBufInput.readTag: integer;
@@ -259,8 +264,7 @@ begin
   Assert(size >= 0, ProtoBufException + 'readBytes (size < 0)');
   SetLength(result, size);
   if size > 0 then
-    Move(Pointer(FBuffer + FPos)^, result[0], size);
-  Inc(FPos, size);
+    readRawBytes(result[0], size);
 end;
 
 function TProtoBufInput.readString: string;
@@ -273,12 +277,11 @@ begin
   if size > 0 then
     begin
       SetLength(buf, size);
-      Move(Pointer(FBuffer + FPos)^, buf[0], size);
+      readRawBytes(buf[0], size);
       result := TEncoding.UTF8.GetString(buf);
     end
   else
     result := '';
-  Inc(FPos, size);
 end;
 
 function TProtoBufInput.ReadSubProtoBufInput: TProtoBufInput;
@@ -387,14 +390,13 @@ end;
 
 function TProtoBufInput.readRawByte: shortint;
 begin
-  Assert(FPos <= FLen, ProtoBufException + 'eof encounterd');
-  result := shortint(FBuffer[FPos]);
-  Inc(FPos);
+  readRawBytes(result, 1);
 end;
 
 procedure TProtoBufInput.readRawBytes(var data; size: integer);
 begin
-  Assert(FPos + size <= FLen, ProtoBufException + 'eof encounterd');
+  Assert(size >= 0, ProtoBufException + 'negative Size');
+  Assert((FLen - FPos) >= size, ProtoBufException + 'eof encounterd');
   Move(FBuffer[FPos], data, size);
   Inc(FPos, size);
 end;
@@ -402,7 +404,7 @@ end;
 procedure TProtoBufInput.skipRawBytes(size: integer);
 begin
   Assert(size >= 0, ProtoBufException + 'negative Size');
-  Assert((FPos + size) < FLen, ProtoBufException + 'truncated Message');
+  Assert((FLen - FPos) >= size, ProtoBufException + 'truncated Message');
   Inc(FPos, size);
 end;
 
@@ -437,16 +439,13 @@ end;
 
 procedure TProtoBufInput.LoadFromStream(Stream: TStream);
 begin
-  if FOwnObject then
-    begin
-      FreeMem(FBuffer, FLen);
-      FBuffer := nil;
-    end;
+  FreeBuffer;
+
   FOwnObject := true;
   FLen := Stream.size;
-  FBuffer := AllocMem(FLen + 1);
+  FBuffer := AllocMem(FLen);
   Stream.Position := 0;
-  Stream.Read(Pointer(FBuffer)^, FLen);
+  Stream.Read(FBuffer^, FLen);
 end;
 
 procedure TProtoBufInput.setPos(aPos: integer);
