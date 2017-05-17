@@ -30,12 +30,14 @@ type
     procedure TestReadLittleEndian32;
     procedure TestReadLittleEndian64;
     procedure TestDecodeZigZag;
+    procedure TestEncodeDecodeZigZag;
     procedure TestReadString;
     procedure TestMemoryLeak;
     procedure TestReadTag;
   end;
 
 implementation
+
 uses
   pbPublic,
   pbInput,
@@ -62,15 +64,48 @@ begin
   CheckEquals(integer($80000000), decodeZigZag32(integer($FFFFFFFF)));
   (* 64 *)
   CheckEquals(0, decodeZigZag64(0));
-  CheckEquals(-1 , decodeZigZag64(1));
-  CheckEquals(1 , decodeZigZag64(2));
-  CheckEquals(-2 , decodeZigZag64(3));
-  CheckEquals(Int64($000000003FFFFFFF) , decodeZigZag64($000000007FFFFFFE));
-  CheckEquals(Int64($FFFFFFFFC0000000) , decodeZigZag64($000000007FFFFFFF));
-  CheckEquals(Int64($000000007FFFFFFF) , decodeZigZag64($00000000FFFFFFFE));
-  CheckEquals(Int64($FFFFFFFF80000000) , decodeZigZag64($00000000FFFFFFFF));
-  CheckEquals(Int64($7FFFFFFFFFFFFFFF) , decodeZigZag64($FFFFFFFFFFFFFFFE));
+  CheckEquals(-1, decodeZigZag64(1));
+  CheckEquals(1, decodeZigZag64(2));
+  CheckEquals(-2, decodeZigZag64(3));
+  CheckEquals(Int64($000000003FFFFFFF), decodeZigZag64($000000007FFFFFFE));
+  CheckEquals(Int64($FFFFFFFFC0000000), decodeZigZag64($000000007FFFFFFF));
+  CheckEquals(Int64($000000007FFFFFFF), decodeZigZag64($00000000FFFFFFFE));
+  CheckEquals(Int64($FFFFFFFF80000000), decodeZigZag64($00000000FFFFFFFF));
+  CheckEquals(Int64($7FFFFFFFFFFFFFFF), decodeZigZag64($FFFFFFFFFFFFFFFE));
   CheckEquals(Int64($8000000000000000), decodeZigZag64($FFFFFFFFFFFFFFFF));
+end;
+
+procedure TestProtoBufMethods.TestEncodeDecodeZigZag;
+var
+  i: integer;
+  j: integer;
+
+  i64: Int64;
+  j64: Int64;
+begin
+  for i := -50000 to 50000 do
+    begin
+      j := EncodeZigZag32(i);
+      CheckEquals(i, decodeZigZag32(j), 'ZigZag32 symmetry error');
+    end;
+
+  i := -MaxInt;
+  j := EncodeZigZag32(i);
+  CheckEquals(i, decodeZigZag32(j), 'ZigZag32 symmetry error');
+
+  i := MaxInt;
+  j := EncodeZigZag32(i);
+  CheckEquals(i, decodeZigZag32(j), 'ZigZag32 symmetry error');
+
+  for i64 := -50000 to 50000 do
+    begin
+      j64 := EncodeZigZag64(i64);
+      CheckEquals(i64, decodeZigZag64(j64), 'ZigZag64 symmetry error');
+    end;
+
+  i64 := $7FFFFFFFFFFFFFFF;
+  j64 := EncodeZigZag64(i64);
+  CheckEquals(i64, decodeZigZag64(j64), 'ZigZag64 symmetry error');
 end;
 
 procedure TestProtoBufMethods.TestMemoryLeak;
@@ -84,10 +119,11 @@ var
 begin
   buf_size := 64 * Mb;
   SetLength(s, buf_size);
-  for i := 0 to 200 do begin
-    in_pb := TProtoBufInput.Create(PAnsiChar(s), Length(s), false);
-    in_pb.Free;
-  end;
+  for i := 0 to 200 do
+    begin
+      in_pb := TProtoBufInput.Create(PAnsiChar(s), Length(s), false);
+      in_pb.Free;
+    end;
 end;
 
 procedure TestProtoBufMethods.TestReadLittleEndian32;
@@ -160,10 +196,10 @@ end;
 
 procedure TestProtoBufMethods.TestReadString;
 const
-  TEST_string  = 'Тестовая строка';
+  TEST_string = 'Тестовая строка';
   TEST_integer = 12345678;
-  TEST_single  = 12345.123;
-  TEST_double  = 1234567890.123;
+  TEST_single = 12345.123;
+  TEST_double = 1234567890.123;
 var
   out_pb: TProtoBufOutput;
   in_pb: TProtoBufInput;
@@ -188,7 +224,7 @@ begin
   t := in_pb.readTag;
   CheckEquals(tag, t);
   text := in_pb.readString;
-  CheckEquals(TEST_string,  text);
+  CheckEquals(TEST_string, text);
   // TEST_integer
   tag := makeTag(2, WIRETYPE_FIXED32);
   t := in_pb.readTag;
@@ -218,7 +254,7 @@ var
   in_pb: TProtoBufInput;
   tag, t: integer;
   tmp: TMemoryStream;
-  data_size: Integer;
+  data_size: integer;
   garbage: Cardinal;
 begin
   tmp := TMemoryStream.Create;
@@ -254,21 +290,21 @@ procedure TestProtoBufMethods.TestVarint;
 type
   TVarintCase = record
     bytes: array [1 .. 10] of byte; // Encoded bytes.
-    size: integer; // Encoded size, in bytes.
+    Size: integer; // Encoded size, in bytes.
     value: Int64; // Parsed value.
   end;
 const
   VarintCases: array [0 .. 7] of TVarintCase = (
     // 32-bit values
-    (bytes: ($00, $00, $00, $00, $00, $00, $00, $00, $00, $00); size: 1; value: 0),
-    (bytes: ($01, $00, $00, $00, $00, $00, $00, $00, $00, $00); size: 1; value: 1),
-    (bytes: ($7F, $00, $00, $00, $00, $00, $00, $00, $00, $00); size: 1; value: 127),
-    (bytes: ($A2, $74, $00, $00, $00, $00, $00, $00, $00, $00); size: 2; value: 14882),
-    (bytes: ($FF, $FF, $FF, $FF, $0F, $00, $00, $00, $00, $00); size: 5; value: - 1),
+    (bytes: ($00, $00, $00, $00, $00, $00, $00, $00, $00, $00); Size: 1; value: 0),
+    (bytes: ($01, $00, $00, $00, $00, $00, $00, $00, $00, $00); Size: 1; value: 1),
+    (bytes: ($7F, $00, $00, $00, $00, $00, $00, $00, $00, $00); Size: 1; value: 127),
+    (bytes: ($A2, $74, $00, $00, $00, $00, $00, $00, $00, $00); Size: 2; value: 14882),
+    (bytes: ($FF, $FF, $FF, $FF, $0F, $00, $00, $00, $00, $00); Size: 5; value: - 1),
     // 64-bit
-    (bytes: ($BE, $F7, $92, $84, $0B, $00, $00, $00, $00, $00); size: 5; value: 2961488830),
-    (bytes: ($BE, $F7, $92, $84, $1B, $00, $00, $00, $00, $00); size: 5; value: 7256456126),
-    (bytes: ($80, $E6, $EB, $9C, $C3, $C9, $A4, $49, $00, $00); size: 8; value: 41256202580718336));
+    (bytes: ($BE, $F7, $92, $84, $0B, $00, $00, $00, $00, $00); Size: 5; value: 2961488830),
+    (bytes: ($BE, $F7, $92, $84, $1B, $00, $00, $00, $00, $00); Size: 5; value: 7256456126),
+    (bytes: ($80, $E6, $EB, $9C, $C3, $C9, $A4, $49, $00, $00); Size: 8; value: 41256202580718336));
 var
   i, j: integer;
   t: TVarintCase;
@@ -281,10 +317,10 @@ begin
     begin
       t := VarintCases[i];
       // создать тестовый буфер
-      SetLength(buf, t.size);
-      for j := 1 to t.size do
+      SetLength(buf, t.Size);
+      for j := 1 to t.Size do
         buf[j] := AnsiChar(t.bytes[j]);
-      pb := TProtoBufInput.Create(@buf[1], t.size);
+      pb := TProtoBufInput.Create(@buf[1], t.Size);
       try
         if i < 5 then
           begin
