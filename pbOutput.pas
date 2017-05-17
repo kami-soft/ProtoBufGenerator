@@ -33,8 +33,6 @@ type
     procedure writeRawVarint64(value: int64);
     (* Encode and write tag. *)
     procedure writeTag(fieldNumber: integer; wireType: integer);
-    (* Encode and write single byte. *)
-    procedure writeRawByte(value: shortint);
     (* Write the data with specified size. *)
     procedure writeRawData(const p: Pointer; size: integer); overload;
     procedure writeRawData(const buf; size: integer); overload;
@@ -139,18 +137,16 @@ begin
 end;
 
 procedure TProtoBufOutput.writeRawBoolean(value: Boolean);
+var
+  b: ShortInt;
 begin
-  writeRawByte(ord(value));
-end;
-
-procedure TProtoBufOutput.writeRawByte(value: shortint);
-begin
-  FBuffer.Add(AnsiChar(value));
+  b := ord(value);
+  writeRawData(b, SizeOf(Byte));
 end;
 
 procedure TProtoBufOutput.writeRawData(const buf; size: integer);
 begin
-  FBuffer.Add(@buf, size);
+  writeRawData(@buf, size);
 end;
 
 procedure TProtoBufOutput.writeRawSInt32(value: integer);
@@ -175,27 +171,27 @@ end;
 
 procedure TProtoBufOutput.writeRawVarint32(value: integer);
 var
-  b: shortint;
+  b: ShortInt;
 begin
   repeat
     b := value and $7F;
     value := value shr 7;
     if value <> 0 then
       b := b + $80;
-    writeRawByte(b);
+    writeRawData(b, SizeOf(ShortInt));
   until value = 0;
 end;
 
 procedure TProtoBufOutput.writeRawVarint64(value: int64);
 var
-  b: shortint;
+  b: ShortInt;
 begin
   repeat
     b := value and $7F;
     value := value shr 7;
     if value <> 0 then
       b := b + $80;
-    writeRawByte(b);
+    writeRawData(b, SizeOf(ShortInt));
   until value = 0;
 end;
 
@@ -210,7 +206,7 @@ begin
   writeTag(fieldNumber, WIRETYPE_LENGTH_DELIMITED);
   writeRawVarint32(length(value));
   if length(value) > 0 then
-    FBuffer.Add(@value[0], length(value));
+    writeRawData(value[0], length(value));
 end;
 
 procedure TProtoBufOutput.writeDouble(fieldNumber: integer; value: double);
@@ -269,7 +265,7 @@ begin
   buf := TEncoding.UTF8.GetBytes(value);
   writeRawVarint32(length(buf));
   if length(buf) > 0 then
-    FBuffer.Add(@buf[0], length(buf));
+    writeRawData(buf[0], length(buf));
 end;
 
 procedure TProtoBufOutput.writeUInt32(fieldNumber: integer; value: cardinal);

@@ -95,14 +95,14 @@ implementation
 
 class procedure TStrBuffer.Error(const Msg: string; Data: Integer);
 
-  function ReturnAddr: Pointer;
+{ function ReturnAddr: Pointer;  // this is not cross-platform
   asm
-    MOV     EAX,[EBP+4]
-  end;
+  MOV     EAX,[EBP+4]
+  end; }
 
-  begin
-    raise EListError.CreateFmt(Msg, [Data])at ReturnAddr;
-  end;
+begin
+  raise EListError.CreateFmt(Msg, [Data]) { at ReturnAddr };
+end;
 
 constructor TStrBuffer.Create;
 begin
