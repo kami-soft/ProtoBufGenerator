@@ -42,9 +42,6 @@ type
     FLastTag: integer;
     FOwnObject: boolean;
     procedure FreeBuffer;
-
-    // Set buffer posititon
-    procedure setPos(aPos: integer);
   public
     constructor Create; overload;
     constructor Create(buf: PAnsiChar; len: integer; aOwnsObjects: boolean = false); overload;
@@ -446,11 +443,6 @@ begin
   FBuffer := AllocMem(FLen);
   Stream.Position := 0;
   Stream.Read(FBuffer^, FLen);
-end;
-
-procedure TProtoBufInput.setPos(aPos: integer);
-begin
-  FPos := aPos;
 end;
 
 function TProtoBufInput.getPos: integer;
