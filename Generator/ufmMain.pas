@@ -3,15 +3,7 @@ unit ufmMain;
 interface
 
 uses
-  Winapi.Windows,
-  Winapi.Messages,
-  System.SysUtils,
-  System.Classes,
-  Vcl.Graphics,
-  Vcl.Controls,
-  Vcl.Forms,
-  Vcl.Dialogs,
-  Vcl.StdCtrls;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls;
 
 type
   TfmMain = class(TForm)
@@ -27,7 +19,7 @@ type
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
   private
-    FFiles: TArray<string>;
+    FFiles    : TArray<string>;
     FFileCount: Integer;
 
     procedure ClearFiles;
@@ -41,7 +33,6 @@ type
     function GetFile(Idx: Integer): string;
     function GetFileCount: Integer;
     function GetPoint: TPoint;
-    procedure Generate(SourceFiles: TStrings; const OutputDir: string);
   public
     constructor Create(DropHandle: THANDLE);
     destructor Destroy; override;
@@ -56,9 +47,7 @@ var
 implementation
 
 uses
-  Vcl.FileCtrl,
-  Winapi.ShellAPI,
-  uProtoBufGenerator;
+  Vcl.FileCtrl, Winapi.ShellAPI, uProtoBufGenerator;
 
 const
   PROTO = '.proto';
@@ -70,32 +59,29 @@ var
   Dir: string;
 begin
   Dir := edtOutputFolder.Text;
-  if SelectDirectory('choose output dir', '', Dir, [sdNewFolder, sdShowShares, sdNewUI, sdValidateDir], nil)
-  then
+  if SelectDirectory('choose output dir', '', Dir, [sdNewFolder, sdShowShares, sdNewUI, sdValidateDir], nil) then
     edtOutputFolder.Text := Dir;
 end;
 
 procedure TfmMain.btnGenerateClick(Sender: TObject);
 var
-  FileNames: TStrings;
-  I: Integer;
+  OutPutDir: string;
+  I        : Integer;
+  Gen: TProtoBufGenerator;
 begin
-  FileNames := TStringList.Create;
-  if edtOutputFolder.Text <> '' then
-    ForceDirectories(edtOutputFolder.Text);
+  if edtProtoFiles.Font.Color = clRed then
+    Exit;
+
+  OutPutDir := edtOutputFolder.Text;
+  if OutPutDir <> '' then
+    ForceDirectories(OutPutDir);
 
   Gen := TProtoBufGenerator.Create;
   try
-    FileNames.Delimiter:=odProtoFile.Files.Delimiter;
-    FileNames.DelimitedText:=edProtoFileName.Text;
-    Generate(FileNames, edOutputFolder.Text);
-    ShowMessage('Complete! Take a look into output directory');
     for I := 0 to Pred(FFileCount) do
-    begin
       Gen.Generate(FFiles[I], edtOutputFolder.Text, TEncoding.UTF8);
-    end;
   finally
-    FileNames.Free;
+    Gen.Free;
   end;
 end;
 
@@ -104,32 +90,26 @@ var
   I: Integer;
 begin
   if odProtoFile.Execute then
-    edProtoFileName.Text := odProtoFile.Files.DelimitedText;
   begin
-    FFileCount := odProtoFile.Files.Count;
+    ClearFiles;
+	  FFileCount := odProtoFile.Files.Count;
     SetLength(FFiles, FFileCount);
     for I := 0 to Pred(FFileCount) do
     begin
       FFiles[I] := odProtoFile.Files[I];
-      edtProtoFiles.Text := edtProtoFiles.Text + ExtractFileName(FFiles[I]) + ';';
+      if SameText(ExtractFileExt(FFiles[I]), PROTO) then
+      begin
+        edtProtoFiles.Text := edtProtoFiles.Text + ExtractFileName(FFiles[I]) + ',';
+      end
+      else
+      begin
+        edtProtoFiles.Font.Color := clRed;
+        edtProtoFiles.Text := Format('Files Type need %s !!!', [PROTO]);
+      end;
     end;
   end;
 end;
 
-procedure TfmMain.Generate(SourceFiles: TStrings; const OutputDir: string);
-var
-  Gen: TProtoBufGenerator;
-  i: Integer;
-begin
-  System.SysUtils.ForceDirectories(OutputDir);
-  Gen := TProtoBufGenerator.Create;
-  try
-    for i := 0 to SourceFiles.Count - 1 do
-      Gen.Generate(SourceFiles[i], edOutputFolder.Text, TEncoding.UTF8);
-  finally
-    Gen.Free;
-  end;
-end;
 procedure TfmMain.ClearFiles;
 begin
   SetLength(FFiles, 0);
@@ -155,7 +135,7 @@ end;
 
 procedure TfmMain.WMDropFiles(var Msg: TWMDropFiles);
 var
-  I, Len: Integer;
+  I, Len : Integer;
   Catcher: TFileCatcher;
 begin
   inherited;
@@ -170,7 +150,7 @@ begin
       FFiles[I] := Catcher.Files[I];
       if SameText(ExtractFileExt(FFiles[I]), PROTO) then
       begin
-        edtProtoFiles.Text := edtProtoFiles.Text + ExtractFileName(FFiles[I]) + ';';
+        edtProtoFiles.Text := edtProtoFiles.Text + ExtractFileName(FFiles[I]) + ',';
       end
       else
       begin

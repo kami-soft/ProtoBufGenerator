@@ -40,7 +40,6 @@ type
     constructor Create; override;
     destructor Destroy; override;
 
-
     property Field1:integer read FField1 write FField1;
     property Field2:Int64 read FField2 write FField2;
   end;
@@ -52,7 +51,6 @@ type
     function LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer; WireType: integer): Boolean; override;
     procedure SaveFieldsToBuf(ProtoBuf: TProtoBufOutput); override;
   public
-
     property Field1:integer read FField1 write FField1;
   end;
 
@@ -85,7 +83,6 @@ type
   public
     constructor Create; override;
     destructor Destroy; override;
-
 
     property DefField1:integer read FDefField1 write FDefField1 default 2;
     property DefField2:Int64 read FDefField2 write FDefField2 default -1;
@@ -124,7 +121,6 @@ type
     function LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer; WireType: integer): Boolean; override;
     procedure SaveFieldsToBuf(ProtoBuf: TProtoBufOutput); override;
   public
-
     property field_name_test_1:integer read Ffield_name_test_1 write Ffield_name_test_1;
     property field_Name_test_2:integer read Ffield_Name_test_2 write Ffield_Name_test_2;
   end;
@@ -152,7 +148,7 @@ begin
   Result := inherited LoadSingleFieldFromBuf(ProtoBuf, FieldNumber, WireType);
   if Result then
     exit;
-  case fieldNumber of
+  case FieldNumber of
     1:
       begin
         FField1 := ProtoBuf.readInt32;
@@ -181,7 +177,7 @@ begin
   Result := inherited LoadSingleFieldFromBuf(ProtoBuf, FieldNumber, WireType);
   if Result then
     exit;
-  case fieldNumber of
+  case FieldNumber of
     1:
       begin
         FField1 := ProtoBuf.readInt32;
@@ -238,7 +234,7 @@ begin
   Result := inherited LoadSingleFieldFromBuf(ProtoBuf, FieldNumber, WireType);
   if Result then
     exit;
-  case fieldNumber of
+  case FieldNumber of
     1:
       begin
         FDefField1 := ProtoBuf.readInt32;
@@ -352,7 +348,7 @@ begin
       end;
     44:
       begin
-        FFieldMArr2List.AddFromBuf(ProtoBuf, fieldNumber);
+        FFieldMArr2List.AddFromBuf(ProtoBuf, makeTag(FieldNumber, WireType));
         Result := True;
       end;
     50:
@@ -425,7 +421,7 @@ begin
   Result := inherited LoadSingleFieldFromBuf(ProtoBuf, FieldNumber, WireType);
   if Result then
     exit;
-  case fieldNumber of
+  case FieldNumber of
     187:
       begin
         Ffield_name_test_1 := ProtoBuf.readInt32;

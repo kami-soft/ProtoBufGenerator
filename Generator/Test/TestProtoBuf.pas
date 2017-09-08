@@ -71,8 +71,8 @@ begin
   CheckEquals(Int64($FFFFFFFFC0000000), decodeZigZag64($000000007FFFFFFF));
   CheckEquals(Int64($000000007FFFFFFF), decodeZigZag64($00000000FFFFFFFE));
   CheckEquals(Int64($FFFFFFFF80000000), decodeZigZag64($00000000FFFFFFFF));
-  CheckEquals(Int64($7FFFFFFFFFFFFFFF), decodeZigZag64($FFFFFFFFFFFFFFFE));
-  CheckEquals(Int64($8000000000000000), decodeZigZag64($FFFFFFFFFFFFFFFF));
+  CheckEquals(Int64($7FFFFFFFFFFFFFFF), decodeZigZag64(Int64($FFFFFFFFFFFFFFFE)));
+  CheckEquals(Int64($8000000000000000), decodeZigZag64(Int64($FFFFFFFFFFFFFFFF)));
 end;
 
 procedure TestProtoBufMethods.TestEncodeDecodeZigZag;
@@ -196,7 +196,7 @@ end;
 
 procedure TestProtoBufMethods.TestReadString;
 const
-  TEST_string = 'Тестовая строка';
+  TEST_string:string = 'Тестов? строка';
   TEST_integer = 12345678;
   TEST_single = 12345.123;
   TEST_double = 1234567890.123;
@@ -316,7 +316,7 @@ begin
   for i := 0 to 7 do
     begin
       t := VarintCases[i];
-      // создать тестовый буфер
+      // создат?тестовый буфе?
       SetLength(buf, t.Size);
       for j := 1 to t.Size do
         buf[j] := AnsiChar(t.bytes[j]);
