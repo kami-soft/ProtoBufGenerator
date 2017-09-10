@@ -1,4 +1,4 @@
-unit TestProtoBuf;
+п»їunit TestProtoBuf;
 {
 
   Delphi DUnit Test Case
@@ -196,7 +196,7 @@ end;
 
 procedure TestProtoBufMethods.TestReadString;
 const
-  TEST_string:string = 'Тестов? строка';
+  TEST_string:string = 'Г’ГҐГ±ГІГ®ГўГ Гї Г±ГІГ°Г®ГЄГ ';
   TEST_integer = 12345678;
   TEST_single = 12345.123;
   TEST_double = 1234567890.123;
@@ -316,7 +316,7 @@ begin
   for i := 0 to 7 do
     begin
       t := VarintCases[i];
-      // создат?тестовый буфе?
+      // иЂ¦зЋџе›№?иќ€иЂ±й’јоЋ– з‹Ќзї¦?
       SetLength(buf, t.Size);
       for j := 1 to t.Size do
         buf[j] := AnsiChar(t.bytes[j]);

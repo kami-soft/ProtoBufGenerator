@@ -69,9 +69,6 @@ var
   I        : Integer;
   Gen: TProtoBufGenerator;
 begin
-  if edtProtoFiles.Font.Color = clRed then
-    Exit;
-
   OutPutDir := edtOutputFolder.Text;
   if OutPutDir <> '' then
     ForceDirectories(OutPutDir);
@@ -97,15 +94,7 @@ begin
     for I := 0 to Pred(FFileCount) do
     begin
       FFiles[I] := odProtoFile.Files[I];
-      if SameText(ExtractFileExt(FFiles[I]), PROTO) then
-      begin
-        edtProtoFiles.Text := edtProtoFiles.Text + ExtractFileName(FFiles[I]) + ',';
-      end
-      else
-      begin
-        edtProtoFiles.Font.Color := clRed;
-        edtProtoFiles.Text := Format('Files Type need %s !!!', [PROTO]);
-      end;
+      edtProtoFiles.Text := edtProtoFiles.Text + ExtractFileName(FFiles[I]) + ',';
     end;
   end;
 end;
@@ -115,7 +104,8 @@ begin
   SetLength(FFiles, 0);
   FFileCount := 0;
   edtProtoFiles.Text := '';
-  edtProtoFiles.Font.Color := clWindowText;
+  edtProtoFiles.Font.Color := clGray;
+  btnGenerate.Enabled := True;
 end;
 
 { Drop Files Action }
@@ -123,7 +113,6 @@ procedure TfmMain.FormCreate(Sender: TObject);
 begin
   odProtoFile.DefaultFolder := '.\';
   odProtoFile.DefaultExtension := PROTO;
-  odProtoFile.Options := odProtoFile.Options + [fdoAllowMultiSelect];
 
   DragAcceptFiles(Self.Handle, True);
 end;
@@ -156,8 +145,11 @@ begin
       begin
         edtProtoFiles.Font.Color := clRed;
         edtProtoFiles.Text := Format('Files Type need %s !!!', [PROTO]);
+        btnGenerate.Enabled := False;
+        Exit;
       end;
     end;
+    edtProtoFiles.Font.Color := clBlack;
   finally
     Catcher.Free;
   end;

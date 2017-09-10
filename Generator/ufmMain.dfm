@@ -23,9 +23,17 @@ object fmMain: TfmMain
     Top = 16
     Width = 409
     Height = 21
+    TabStop = False
     Anchors = [akLeft, akTop, akRight]
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clGray
+    Font.Height = -11
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    ReadOnly = True
     TabOrder = 0
-    TextHint = 'Choose .proto file'
+    Text = 'Use "..." Choose .proto files Or Drag files into window~'
   end
   object btnOpenProtoFile: TButton
     Left = 423

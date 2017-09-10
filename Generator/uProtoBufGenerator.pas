@@ -412,7 +412,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
                     SL.Add(Format('        F%s.Add(T%s(ProtoBuf.readEnum));', [DelphiProp.PropertyName, Prop.PropType]));
                 end
               else
-                SL.Add(Format('        F%s.AddFromBuf(ProtoBuf, makeTag(FieldNumber, WireType));', [DelphiProp.PropertyName]));
+                SL.Add(Format('        F%s.AddFromBuf(ProtoBuf, FieldNumber);', [DelphiProp.PropertyName]));
           end;
         SL.Add('        Result := True;');
         SL.Add('      end;');
