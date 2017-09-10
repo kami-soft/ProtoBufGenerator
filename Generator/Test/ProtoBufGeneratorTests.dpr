@@ -17,6 +17,7 @@ program ProtoBufGeneratorTests;
 uses
   DUnitTestRunner,
   TestuProtoBufParserClasses in 'TestuProtoBufParserClasses.pas',
+  TestuProtoBufGenerator in 'TestuProtoBufGenerator.pas',
   uProtoBufParserClasses in '..\uProtoBufParserClasses.pas',
   uProtoBufParserAbstractClasses in '..\uProtoBufParserAbstractClasses.pas',
   uProtoBufGenerator in '..\uProtoBufGenerator.pas',
@@ -25,7 +26,6 @@ uses
   pbOutput in '..\..\pbOutput.pas',
   pbPublic in '..\..\pbPublic.pas',
   StrBuffer in '..\..\StrBuffer.pas',
-  TestuProtoBufGenerator in 'TestuProtoBufGenerator.pas',
   TestProtoBuf in 'TestProtoBuf.pas';
 
 {R *.RES}

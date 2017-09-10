@@ -11,19 +11,29 @@ object fmMain: TfmMain
   Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
   DesignSize = (
     458
     154)
   PixelsPerInch = 96
   TextHeight = 13
-  object edProtoFileName: TEdit
+  object edtProtoFiles: TEdit
     Left = 8
     Top = 16
     Width = 409
     Height = 21
+    TabStop = False
     Anchors = [akLeft, akTop, akRight]
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clGray
+    Font.Height = -11
+    Font.Name = 'Tahoma'
+    Font.Style = []
+    ParentFont = False
+    ReadOnly = True
     TabOrder = 0
-    TextHint = 'Choose proto file'
+    Text = 'Use "..." Choose .proto files Or Drag files into window~'
   end
   object btnOpenProtoFile: TButton
     Left = 423
@@ -45,13 +55,14 @@ object fmMain: TfmMain
     TabOrder = 2
     OnClick = btnGenerateClick
   end
-  object edOutputFolder: TEdit
+  object edtOutputFolder: TEdit
     Left = 8
     Top = 53
     Width = 409
     Height = 21
     Anchors = [akLeft, akTop, akRight]
     TabOrder = 3
+    Text = '.\PbOut'
     TextHint = 'Choose output folder'
   end
   object btnChooseOutputFolder: TButton

@@ -12,7 +12,8 @@ unit Example1;
 
 interface
 
-uses Classes, SysUtils, Contnrs, pbPublic, pbInput, pbOutput;
+uses
+  Classes, SysUtils, Contnrs, pbPublic, pbInput, pbOutput;
 
 (*
 
@@ -40,45 +41,47 @@ uses Classes, SysUtils, Contnrs, pbPublic, pbInput, pbOutput;
 
 type
 
-    TPhoneType = (ptMOBILE, ptHOME, ptWORK);
+  TPhoneType = (ptMOBILE, ptHOME, ptWORK);
 
-    TPhoneNumber = class
-    private
-      FTyp: TPhoneType;
-      FNumber: AnsiString;
-    const
-      ft_Number = 1;
-      ft_Typ = 2;
-    public
-      constructor Create;
-      property Number: AnsiString read FNumber write FNumber;
-      property Typ: TPhoneType read FTyp write FTyp;
-    end;
+  TPhoneNumber = class
+  private
+    FTyp   : TPhoneType;
+    FNumber: AnsiString;
 
-    TPerson = class
-    private
-      FName: AnsiString;
-      FEmail: AnsiString;
-      FId: integer;
-      FPhones: TObjectList;
-      function GetPhones(Index: integer): TPhoneNumber;
-      function GetPhonesCount: integer;
-    const
-      ft_Name = 1;
-      ft_Id = 2;
-      ft_Email = 3;
-      ft_Phone = 4;
-    public
-      constructor Create;
-      destructor Destroy; override;
-      procedure AddPhone(const Number: AnsiString; Typ: TPhoneType = ptHOME);
-      procedure DeletePhone(Index: integer);
-      property Name: AnsiString read FName write FName;
-      property Id: integer read FId write FId;
-      property Email: AnsiString read FEmail write FEmail;
-      property PhonesCount: integer read GetPhonesCount;
-      property Phones[Index: integer]: TPhoneNumber read GetPhones;
-    end;
+  const
+    ft_Number = 1;
+    ft_Typ    = 2;
+  public
+    constructor Create;
+    property Number: AnsiString read FNumber write FNumber;
+    property Typ: TPhoneType read FTyp write FTyp;
+  end;
+
+  TPerson = class
+  private
+    FName  : AnsiString;
+    FEmail : AnsiString;
+    FId    : integer;
+    FPhones: TObjectList;
+    function GetPhones(Index: integer): TPhoneNumber;
+    function GetPhonesCount: integer;
+
+  const
+    ft_Name  = 1;
+    ft_Id    = 2;
+    ft_Email = 3;
+    ft_Phone = 4;
+  public
+    constructor Create;
+    destructor Destroy; override;
+    procedure AddPhone(const Number: AnsiString; Typ: TPhoneType = ptHOME);
+    procedure DeletePhone(Index: integer);
+    property name: AnsiString read FName write FName;
+    property Id: integer read FId write FId;
+    property Email: AnsiString read FEmail write FEmail;
+    property PhonesCount: integer read GetPhonesCount;
+    property Phones[index: integer]: TPhoneNumber read GetPhones;
+  end;
 
   TPersonBuilder = class
   private
@@ -98,7 +101,7 @@ type
     constructor Create;
     destructor Destroy; override;
     function GetBuf: TProtoBufInput;
-    procedure Load(person: TPerson);
+    procedure Load(Person: TPerson);
   end;
 
 implementation
@@ -130,9 +133,9 @@ begin
   Result := FPhones.Count;
 end;
 
-function TPerson.GetPhones(Index: Integer): TPhoneNumber;
+function TPerson.GetPhones(Index: integer): TPhoneNumber;
 begin
-  Result := FPhones.Items[Index] as TPhoneNumber;
+  Result := FPhones.Items[index] as TPhoneNumber;
 end;
 
 procedure TPerson.AddPhone(const Number: AnsiString; Typ: TPhoneType = ptHOME);
@@ -147,7 +150,7 @@ end;
 
 procedure TPerson.DeletePhone(Index: integer);
 begin
-  FPhones.Delete(Index);
+  FPhones.Delete(index);
 end;
 
 { TPersonBuilder }
@@ -171,9 +174,9 @@ end;
 
 procedure TPersonBuilder.Write(Person: TPerson);
 var
-  Phone: TPhoneNumber;
+  Phone       : TPhoneNumber;
   PhonesBuffer: TProtoBufOutput;
-  i: Integer;
+  i           : integer;
 begin
   FBuffer.writeString(TPerson.ft_Name, Person.Name);
   FBuffer.writeInt32(TPerson.ft_Id, Person.FId);
@@ -222,30 +225,31 @@ begin
   Result := FBuffer;
 end;
 
-procedure TPersonReader.Load(person: TPerson);
+procedure TPersonReader.Load(Person: TPerson);
 var
   tag, fieldNumber, wireType: integer;
-  Phone: TPhoneNumber;
+  Phone                     : TPhoneNumber;
 begin
   tag := FBuffer.readTag;
-  while tag <> 0 do begin
+  while tag <> 0 do
+  begin
     wireType := getTagWireType(tag);
     fieldNumber := getTagFieldNumber(tag);
     case fieldNumber of
       TPerson.ft_Name:
         begin
           Assert(wireType = WIRETYPE_LENGTH_DELIMITED);
-          person.Name := FBuffer.readString;
+          Person.Name := FBuffer.readString;
         end;
       TPerson.ft_Id:
         begin
           Assert(wireType = WIRETYPE_VARINT);
-          person.Id := FBuffer.readInt32;
+          Person.Id := FBuffer.readInt32;
         end;
       TPerson.ft_Email:
         begin
           Assert(wireType = WIRETYPE_LENGTH_DELIMITED);
-          person.Email := FBuffer.readString;
+          Person.Email := FBuffer.readString;
         end;
       TPerson.ft_Phone:
         begin
@@ -254,8 +258,8 @@ begin
           Person.FPhones.Add(Phone);
           LoadPhone(Phone);
         end;
-      else
-        FBuffer.skipField(tag);
+    else
+      FBuffer.skipField(tag);
     end;
     tag := FBuffer.readTag;
   end;
@@ -264,14 +268,15 @@ end;
 procedure TPersonReader.LoadPhone(Phone: TPhoneNumber);
 var
   tag, fieldNumber, wireType: integer;
-  size: Integer;
-  endPosition: Integer;
+  size                      : integer;
+  endPosition               : integer;
 begin
   size := FBuffer.readInt32;
   endPosition := FBuffer.getPos + size;
   repeat
     tag := FBuffer.readTag;
-    if tag = 0 then exit;
+    if tag = 0 then
+      exit;
     wireType := getTagWireType(tag);
     fieldNumber := getTagFieldNumber(tag);
     case fieldNumber of
@@ -285,11 +290,10 @@ begin
           Assert(wireType = WIRETYPE_VARINT);
           Phone.Typ := TPhoneType(FBuffer.readInt32);
         end;
-      else
-        FBuffer.skipField(tag);
+    else
+      FBuffer.skipField(tag);
     end;
   until FBuffer.getPos >= endPosition;
 end;
 
 end.
-

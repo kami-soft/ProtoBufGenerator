@@ -1,4 +1,4 @@
-unit TestGeneratedProtoBufPas;
+ï»¿unit TestGeneratedProtoBufPas;
 {
 
   Delphi DUnit Test Case
@@ -76,7 +76,7 @@ var
 begin
   FTestMsg1.DefField1 := 1;
   FTestMsg1.DefField2 := 3;
-  FTestMsg1.DefField3 := 'asôâàóöé';
+  FTestMsg1.DefField3 := 'asÃ´Ã¢Ã Ã³Ã¶Ã©';
   FTestMsg1.DefField4 := -2.5;
   FTestMsg1.DefField5 := True;
   FTestMsg1.DefField6 := TEnumG0.g2;
@@ -85,7 +85,7 @@ begin
   FTestMsg1.DefField9 := 5.5;
   FTestMsg1.FieldArr1List.Add(-5);
   FTestMsg1.FieldArr2List.Add(234);
-  FTestMsg1.FieldArr3List.Add('asdfçöóêãøò');
+  FTestMsg1.FieldArr3List.Add('asdfÃ§Ã¶Ã³ÃªÃ£Ã¸Ã²');
 
   tmp := TTestMsg1.Create;
   try
