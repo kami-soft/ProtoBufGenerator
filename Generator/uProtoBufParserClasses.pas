@@ -500,6 +500,7 @@ end;
 procedure TProtoBufMessage.ParseFromProto(const Proto: string; var iPos: integer);
 var
   Item: TProtoBufProperty;
+  s: string;
 begin
   inherited;
   (*
@@ -511,6 +512,13 @@ begin
 
   FName := ReadWordFromBuf(Proto, iPos, ['{']);
   SkipRequiredChar(Proto, iPos, '{');
+  s := Trim(ReadCommentIfExists(Proto, iPos));
+  if StartsText('ExtName:', s) then
+    begin
+      s := StringReplace(s, 'ExtName:', '', [rfIgnoreCase]);
+      FName := FName + ':' + Trim(s);
+    end;
+
   SkipAllComments(Proto, iPos);
   while Proto[iPos] <> '}' do
     begin
@@ -703,20 +711,48 @@ procedure TProtoFile.ParseMessage(const Proto: string; var iPos: integer; IsExte
 var
   Msg: TProtoBufMessage;
   i: integer;
+  tmpName: string;
+  tmpExt: string;
 begin
   Msg := TProtoBufMessage.Create(Self);
   try
     Msg.IsImported := FInImportCounter > 0;
     Msg.ParseFromProto(Proto, iPos);
+
+    i := Pos(':', Msg.Name);
+    if i <> 0 then
+      begin
+        tmpExt := Copy(Msg.Name, 1, i - 1);
+        tmpName := Copy(Msg.Name, i + 1, Length(Msg.Name));
+      end
+    else
+      begin
+        tmpExt := '';
+        tmpName := Msg.Name;
+      end;
+
     if IsExtension then
       begin
+        if tmpExt = '' then
+          begin
         for i := 1 to High(integer) do
-          if FProtoBufMessages.FindByName(Msg.Name + 'Extension' + IntToStr(i)) = nil then
+              if FProtoBufMessages.FindByName(tmpName + 'Extension' + IntToStr(i)) = nil then
             begin
-              Msg.ExtendOf := Msg.Name;
-              Msg.Name := Msg.Name + 'Extension' + IntToStr(i);
+                  Msg.ExtendOf := tmpName;
+                  Msg.Name := tmpName + 'Extension' + IntToStr(i);
               Break;
             end;
+          end
+        else
+          begin
+            Msg.ExtendOf := tmpExt;
+            Msg.Name := tmpName;
+      end;
+      end
+    else
+      begin
+        Msg.ExtendOf := '';
+        Msg.Name := tmpName;
       end;
     FProtoBufMessages.Add(Msg);
     Msg := nil;
