@@ -572,9 +572,8 @@ begin
   inherited;
 end;
 
-function PathRelativePathTo(pszPath: PChar; pszFrom: PChar; dwAttrFrom: DWORD; pszTo: PChar; dwAtrTo: DWORD): LongBool; stdcall;
-  external 'shlwapi.dll' name 'PathRelativePathToW';
-function PathCanonicalize(lpszDst: PChar; lpszSrc: PChar): LongBool; stdcall; external 'shlwapi.dll' name 'PathCanonicalizeW';
+function PathRelativePathTo(pszPath: PChar; pszFrom: PChar; dwAttrFrom: DWORD; pszTo: PChar; dwAtrTo: DWORD): LongBool; stdcall; external 'shlwapi.dll' Name 'PathRelativePathToW';
+function PathCanonicalize(lpszDst: PChar; lpszSrc: PChar): LongBool; stdcall; external 'shlwapi.dll' Name 'PathCanonicalizeW';
 
 function AbsToRel(const AbsPath, BasePath: string): string;
 var
@@ -617,7 +616,7 @@ begin
       OldFileName := FFileName;
       OldName := FName;
       try
-        FFileName := sFileName;
+        FileName := sFileName;
         iPos := 1;
         ParseFromProto(SL.Text, iPos);
         FImports.Add(FName);
@@ -729,7 +728,7 @@ end;
 procedure TProtoFile.SetFileName(const Value: string);
 begin
   FFileName := Value;
-  FName:=ChangeFileExt(ExtractFileName(Value), '');
+  FName := ChangeFileExt(ExtractFileName(Value), '');
 end;
 
 { TProtoBufMessageList }

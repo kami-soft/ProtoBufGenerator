@@ -65,14 +65,14 @@ begin
       Result := 'TBytes';
   else
     i := LastDelimiter('.', PropTypeName);
-    Result := 'T'+Copy(PropTypeName, i+1, Length(PropTypeName));
+    Result := 'T' + Copy(PropTypeName, i + 1, Length(PropTypeName));
   end;
 end;
 
 function PropertyIsPrimitiveNumericPacked(Prop: TProtoBufProperty): Boolean;
 begin
-  Result := (Prop.PropOptions.Value['packed'] = 'true') and (StrToPropertyType(Prop.PropType) in [sptDouble, sptFloat, sptInt32, sptInt64, sptuInt32, sptUint64,
-    sptSInt32, sptSInt64, sptBool, sptFixed32, sptSFixed32, sptFixed64, sptSFixed64])
+  Result := (Prop.PropOptions.Value['packed'] = 'true') and (StrToPropertyType(Prop.PropType) in [sptDouble, sptFloat, sptInt32, sptInt64, sptuInt32, sptUint64, sptSInt32,
+    sptSInt64, sptBool, sptFixed32, sptSFixed32, sptFixed64, sptSFixed64])
 end;
 
 function GetProtoBufMethodForScalarType(const Prop: TProtoBufProperty): string;
@@ -336,7 +336,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
         SL.Add('  tmpBuf: TProtoBufInput;'); // avoid compiler hint
       end;
     SL.Add('begin');
-    SL.Add('  Result := inherited LoadSingleFieldFromBuf(ProtoBuf, FieldNumber, WireType);');
+    SL.Add('  Result := inherited;');
     if ProtoMsg.Count = 0 then
       begin
         SL.Add('end;');
@@ -532,10 +532,11 @@ begin
   SL.Add('implementation');
 
   for i := 0 to Proto.ProtoBufMessages.Count - 1 do
-    begin
-      SL.Add('');
-      WriteMessageToSL(Proto.ProtoBufMessages[i], SL);
-    end;
+    if not Proto.ProtoBufMessages[i].IsImported then
+      begin
+        SL.Add('');
+        WriteMessageToSL(Proto.ProtoBufMessages[i], SL);
+      end;
   SL.Add('');
   SL.Add('end.');
 end;
@@ -649,17 +650,19 @@ begin
   SL.Add('type');
   // add all enums
   for i := 0 to Proto.ProtoBufEnums.Count - 1 do
-    begin
-      WriteEnumToSL(Proto.ProtoBufEnums[i], SL);
-      SL.Add('');
-    end;
+    if not Proto.ProtoBufEnums[i].IsImported then
+      begin
+        WriteEnumToSL(Proto.ProtoBufEnums[i], SL);
+        SL.Add('');
+      end;
 
   // add all classes definitions
   for i := 0 to Proto.ProtoBufMessages.Count - 1 do
-    begin
-      WriteMessageToSL(Proto.ProtoBufMessages[i], SL);
-      SL.Add('');
-    end;
+    if not Proto.ProtoBufMessages[i].IsImported then
+      begin
+        WriteMessageToSL(Proto.ProtoBufMessages[i], SL);
+        SL.Add('');
+      end;
 end;
 
 procedure TProtoBufGenerator.Generate(const InputFile, OutputDir: string; Encoding: TEncoding);
