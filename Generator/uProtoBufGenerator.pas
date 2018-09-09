@@ -196,9 +196,9 @@ begin
     begin
       DelphiProp.PropertyName := Format('%sList', [Prop.Name]);
       if DelphiProp.isObject then
-        DelphiProp.PropertyType := Format('TProtoBufClassList<%s>', [ProtoPropTypeToDelphiType(Prop.PropType)])
+        DelphiProp.PropertyType := Format('TAbstractDataList<%s>', [ProtoPropTypeToDelphiType(Prop.PropType)])
       else
-        DelphiProp.PropertyType := Format('TList<%s>', [ProtoPropTypeToDelphiType(Prop.PropType)]);
+        DelphiProp.PropertyType := Format('TAbstractList<%s>', [ProtoPropTypeToDelphiType(Prop.PropType)]);
     end;
 
 end;
@@ -292,7 +292,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
     i: integer;
   begin
     SL.Add('');
-    SL.Add(Format('constructor T%s.Create;', [ProtoMsg.Name]));
+    SL.Add(Format('constructor T%s.Create(AOwner: TObject);', [ProtoMsg.Name]));
     SL.Add('begin');
     SL.Add('  inherited;');
     for i := 0 to ProtoMsg.Count - 1 do
@@ -300,7 +300,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
         Prop := ProtoMsg[i];
         ParsePropType(Prop, Proto, DelphiProp);
         if DelphiProp.IsList or DelphiProp.isObject then
-          SL.Add(Format('  F%s := %s.Create;', [DelphiProp.PropertyName, DelphiProp.PropertyType]));
+          SL.Add(Format('  F%s := %s.Create(Self);', [DelphiProp.PropertyName, DelphiProp.PropertyType]));
         if Prop.PropOptions.HasValue['default'] then
           SL.Add(Format('  F%s := %s;', [DelphiProp.PropertyName, ReQuoteStr(Prop.PropOptions.Value['default'])]));
         if Prop.PropKind = ptRequired then
@@ -359,14 +359,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
               if not DelphiProp.isObject then
                 SL.Add(Format('        F%s := %s(ProtoBuf.readEnum);', [DelphiProp.PropertyName, DelphiProp.PropertyType]))
               else
-                begin
-                  SL.Add('        tmpBuf := ProtoBuf.ReadSubProtoBufInput;');
-                  SL.Add('        try');
-                  SL.Add(Format('          F%s.LoadFromBuf(tmpBuf);', [DelphiProp.PropertyName]));
-                  SL.Add('        finally');
-                  SL.Add('          tmpBuf.Free;');
-                  SL.Add('        end;');
-                end;
+                SL.Add(Format('        F%s.LoadFromBufAsField(ProtoBuf, FieldNumber);', [DelphiProp.PropertyName]));
           end
         else
           begin
@@ -452,15 +445,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
               if not DelphiProp.isObject then
                 SL.Add(Format('  ProtoBuf.writeInt32(%d, integer(F%s));', [Prop.PropFieldNum, DelphiProp.PropertyName]))
               else
-                begin
-                  SL.Add('  tmpBuf:=TProtoBufOutput.Create;');
-                  SL.Add('  try');
-                  SL.Add(Format('    F%s.SaveToBuf(tmpBuf);', [DelphiProp.PropertyName]));
-                  SL.Add(Format('    ProtoBuf.writeMessage(%d, tmpBuf);', [Prop.PropFieldNum]));
-                  SL.Add('  finally');
-                  SL.Add('    tmpBuf.Free;');
-                  SL.Add('  end;');
-                end;
+                SL.Add(Format('  F%s.SaveToBufAsField(ProtoBuf, %d);', [DelphiProp.PropertyName, Prop.PropFieldNum]));
           end
         else
           begin
@@ -572,7 +557,7 @@ procedure TProtoBufGenerator.GenerateInterfaceSection(Proto: TProtoFile; SL: TSt
     if ProtoMsg.IsImported then
       Exit;
     if ProtoMsg.ExtendOf = '' then
-      s := 'AbstractProtoBufClass'
+      s := 'AbstractData'
     else
       s := ProtoMsg.ExtendOf;
     SL.Add(Format('  T%s = class(T%s)', [ProtoMsg.Name, s]));
@@ -591,7 +576,7 @@ procedure TProtoBufGenerator.GenerateInterfaceSection(Proto: TProtoFile; SL: TSt
     SL.Add('  public');
     if MsgNeedConstructor(ProtoMsg, Proto) then
       begin
-        SL.Add('    constructor Create; override;');
+        SL.Add('    constructor Create(AOwner: TObject); override;');
         SL.Add('    destructor Destroy; override;');
         SL.Add('');
       end;
@@ -637,11 +622,12 @@ begin
   SL.Add('  pbInput,');
   SL.Add('  pbOutput,');
   SL.Add('  pbPublic,');
+  SL.Add('  uAbstractProtoBufClasses,');
   if Proto.Imports.Count = 0 then
-    SL.Add('  uAbstractProtoBufClasses;')
+    SL.Add('  Common.AbstractClasses;')
   else
     begin
-      SL.Add('  uAbstractProtoBufClasses,');
+      SL.Add('  Common.AbstractClasses,');
       for i := 0 to Proto.Imports.Count - 2 do
         SL.Add('  ' + Proto.Imports[i] + ',');
       SL.Add('  ' + Proto.Imports[Proto.Imports.Count - 1] + ';');

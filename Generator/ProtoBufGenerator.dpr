@@ -1,6 +1,11 @@
 program ProtoBufGenerator;
 
 uses
+  madExcept,
+  madLinkDisAsm,
+  madListHardware,
+  madListProcesses,
+  madListModules,
   Vcl.Forms,
   ufmMain in 'ufmMain.pas' {fmMain},
   pbInput in '..\pbInput.pas',
