@@ -14,7 +14,8 @@ uses
   pbInput,
   pbOutput,
   pbPublic,
-  uAbstractProtoBufClasses;
+  uAbstractProtoBufClasses,
+  Common.AbstractClasses;
 
 type
   TEnumGlobal=(

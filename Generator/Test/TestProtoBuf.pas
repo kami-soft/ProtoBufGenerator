@@ -133,10 +133,9 @@ type
     value: integer; // Parsed value.
   end;
 const
-  LittleEndianCases: array [0 .. 5] of TLittleEndianCase = ((bytes: ($78, $56, $34, $12); value: $12345678),
-    (bytes: ($F0, $DE, $BC, $9A); value: integer($9ABCDEF0)), (bytes: ($FF, $00, $00, $00); value: 255),
-    (bytes: ($FF, $FF, $00, $00); value: 65535), (bytes: ($4E, $61, $BC, $00); value: 12345678),
-    (bytes: ($B2, $9E, $43, $FF); value: - 12345678));
+  LittleEndianCases: array [0 .. 5] of TLittleEndianCase = ((bytes: ($78, $56, $34, $12); value: $12345678), (bytes: ($F0, $DE, $BC, $9A); value: integer($9ABCDEF0)),
+    (bytes: ($FF, $00, $00, $00); value: 255), (bytes: ($FF, $FF, $00, $00); value: 65535), (bytes: ($4E, $61, $BC, $00); value: 12345678), (bytes: ($B2, $9E, $43, $FF);
+    value: - 12345678));
 var
   i, j: integer;
   t: TLittleEndianCase;
@@ -167,9 +166,8 @@ type
     value: Int64; // Parsed value.
   end;
 const
-  LittleEndianCases: array [0 .. 3] of TLittleEndianCase = ((bytes: ($67, $45, $23, $01, $78, $56, $34, $12);
-    value: $1234567801234567), (bytes: ($F0, $DE, $BC, $9A, $78, $56, $34, $12); value: $123456789ABCDEF0),
-    (bytes: ($79, $DF, $0D, $86, $48, $70, $00, $00); value: 123456789012345),
+  LittleEndianCases: array [0 .. 3] of TLittleEndianCase = ((bytes: ($67, $45, $23, $01, $78, $56, $34, $12); value: $1234567801234567),
+    (bytes: ($F0, $DE, $BC, $9A, $78, $56, $34, $12); value: $123456789ABCDEF0), (bytes: ($79, $DF, $0D, $86, $48, $70, $00, $00); value: 123456789012345),
     (bytes: ($87, $20, $F2, $79, $B7, $8F, $FF, $FF); value: - 123456789012345));
 var
   i, j: integer;
@@ -211,41 +209,49 @@ var
   delta: extended;
 begin
   out_pb := TProtoBufOutput.Create;
-  out_pb.writeString(1, TEST_string);
-  out_pb.writeFixed32(2, TEST_integer);
-  out_pb.writeFloat(3, TEST_single);
-  out_pb.writeDouble(4, TEST_double);
-  out_pb.SaveToFile('test.dmp');
+  try
+    out_pb.writeString(1, TEST_string);
+    out_pb.writeFixed32(2, TEST_integer);
+    out_pb.writeFloat(3, TEST_single);
+    out_pb.writeDouble(4, TEST_double);
+    out_pb.SaveToFile('test.dmp');
+  finally
+    out_pb.Free;
+  end;
 
   in_pb := TProtoBufInput.Create();
-  in_pb.LoadFromFile('test.dmp');
-  // TEST_string
-  tag := makeTag(1, WIRETYPE_LENGTH_DELIMITED);
-  t := in_pb.readTag;
-  CheckEquals(tag, t);
-  text := in_pb.readString;
-  CheckEquals(TEST_string, text);
-  // TEST_integer
-  tag := makeTag(2, WIRETYPE_FIXED32);
-  t := in_pb.readTag;
-  CheckEquals(tag, t);
-  int := in_pb.readFixed32;
-  CheckEquals(TEST_integer, int);
-  // TEST_single
-  tag := makeTag(3, WIRETYPE_FIXED32);
-  t := in_pb.readTag;
-  CheckEquals(tag, t);
-  flt := in_pb.readFloat;
-  delta := TEST_single - flt;
-  CheckTrue(abs(delta) < 0.001);
-  // TEST_double
-  tag := makeTag(4, WIRETYPE_FIXED64);
-  t := in_pb.readTag;
-  CheckEquals(tag, t);
-  dbl := in_pb.readDouble;
-  {$OVERFLOWCHECKS ON}
-  delta := dbl - TEST_double;
-  CheckTrue(abs(delta) < 0.000001);
+  try
+    in_pb.LoadFromFile('test.dmp');
+    // TEST_string
+    tag := makeTag(1, WIRETYPE_LENGTH_DELIMITED);
+    t := in_pb.readTag;
+    CheckEquals(tag, t);
+    text := in_pb.readString;
+    CheckEquals(TEST_string, text);
+    // TEST_integer
+    tag := makeTag(2, WIRETYPE_FIXED32);
+    t := in_pb.readTag;
+    CheckEquals(tag, t);
+    int := in_pb.readFixed32;
+    CheckEquals(TEST_integer, int);
+    // TEST_single
+    tag := makeTag(3, WIRETYPE_FIXED32);
+    t := in_pb.readTag;
+    CheckEquals(tag, t);
+    flt := in_pb.readFloat;
+    delta := TEST_single - flt;
+    CheckTrue(abs(delta) < 0.001);
+    // TEST_double
+    tag := makeTag(4, WIRETYPE_FIXED64);
+    t := in_pb.readTag;
+    CheckEquals(tag, t);
+    dbl := in_pb.readDouble;
+    {$OVERFLOWCHECKS ON}
+    delta := dbl - TEST_double;
+    CheckTrue(abs(delta) < 0.000001);
+  finally
+    in_pb.Free;
+  end;
 end;
 
 procedure TestProtoBufMethods.TestReadTag;
@@ -296,15 +302,12 @@ type
 const
   VarintCases: array [0 .. 7] of TVarintCase = (
     // 32-bit values
-    (bytes: ($00, $00, $00, $00, $00, $00, $00, $00, $00, $00); Size: 1; value: 0),
-    (bytes: ($01, $00, $00, $00, $00, $00, $00, $00, $00, $00); Size: 1; value: 1),
-    (bytes: ($7F, $00, $00, $00, $00, $00, $00, $00, $00, $00); Size: 1; value: 127),
-    (bytes: ($A2, $74, $00, $00, $00, $00, $00, $00, $00, $00); Size: 2; value: 14882),
+    (bytes: ($00, $00, $00, $00, $00, $00, $00, $00, $00, $00); Size: 1; value: 0), (bytes: ($01, $00, $00, $00, $00, $00, $00, $00, $00, $00); Size: 1; value: 1),
+    (bytes: ($7F, $00, $00, $00, $00, $00, $00, $00, $00, $00); Size: 1; value: 127), (bytes: ($A2, $74, $00, $00, $00, $00, $00, $00, $00, $00); Size: 2; value: 14882),
     (bytes: ($FF, $FF, $FF, $FF, $0F, $00, $00, $00, $00, $00); Size: 5; value: - 1),
     // 64-bit
-    (bytes: ($BE, $F7, $92, $84, $0B, $00, $00, $00, $00, $00); Size: 5; value: 2961488830),
-    (bytes: ($BE, $F7, $92, $84, $1B, $00, $00, $00, $00, $00); Size: 5; value: 7256456126),
-    (bytes: ($80, $E6, $EB, $9C, $C3, $C9, $A4, $49, $00, $00); Size: 8; value: 41256202580718336));
+    (bytes: ($BE, $F7, $92, $84, $0B, $00, $00, $00, $00, $00); Size: 5; value: 2961488830), (bytes: ($BE, $F7, $92, $84, $1B, $00, $00, $00, $00, $00); Size: 5;
+    value: 7256456126), (bytes: ($80, $E6, $EB, $9C, $C3, $C9, $A4, $49, $00, $00); Size: 8; value: 41256202580718336));
 var
   i, j: integer;
   t: TVarintCase;

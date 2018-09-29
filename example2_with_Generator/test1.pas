@@ -15,10 +15,10 @@ uses
   pbOutput,
   pbPublic,
   uAbstractProtoBufClasses,
+  Common.AbstractClasses,
   TestImport1;
 
 type
-
   TEnumG0=(
     g1 = 1,
     g2 = 2
@@ -29,7 +29,7 @@ type
     Val2 = 2
   );
 
-  TTestMsg0 = class(TAbstractProtoBufClass)
+  TTestMsg0 = class(TAbstractData)
   strict private
     FField1: integer;
     FField2: Int64;
@@ -37,7 +37,7 @@ type
     function LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer; WireType: integer): Boolean; override;
     procedure SaveFieldsToBuf(ProtoBuf: TProtoBufOutput); override;
   public
-    constructor Create; override;
+    constructor Create(AOwner: TObject); override;
     destructor Destroy; override;
 
 
@@ -45,7 +45,7 @@ type
     property Field2:Int64 read FField2 write FField2;
   end;
 
-  TTestNested1 = class(TAbstractProtoBufClass)
+  TTestNested1 = class(TAbstractData)
   strict private
     FField1: integer;
   strict protected
@@ -56,7 +56,7 @@ type
     property Field1:integer read FField1 write FField1;
   end;
 
-  TTestMsg1 = class(TAbstractProtoBufClass)
+  TTestMsg1 = class(TAbstractData)
   strict private
     FDefField1: integer;
     FDefField2: Int64;
@@ -72,18 +72,18 @@ type
     FFieldE2: TEnum1;
     FFieldNested1: TTestNested1;
     FFieldNested2: TTestNested1;
-    FFieldArr1List: TList<integer>;
-    FFieldArr2List: TList<integer>;
-    FFieldArr3List: TList<string>;
-    FFieldArrE1List: TList<TEnum1>;
-    FFieldMArr2List: TProtoBufClassList<TTestMsg0>;
+    FFieldArr1List: TAbstractList<integer>;
+    FFieldArr2List: TAbstractList<integer>;
+    FFieldArr3List: TAbstractList<string>;
+    FFieldArrE1List: TAbstractList<TEnum1>;
+    FFieldMArr2List: TAbstractDataList<TTestMsg0>;
     FFieldImp1: TEnumGlobal;
     FFieldImp2: TEnumGlobal;
   strict protected
     function LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer; WireType: integer): Boolean; override;
     procedure SaveFieldsToBuf(ProtoBuf: TProtoBufOutput); override;
   public
-    constructor Create; override;
+    constructor Create(AOwner: TObject); override;
     destructor Destroy; override;
 
 
@@ -105,12 +105,12 @@ type
     property FieldNested1:TTestNested1 read FFieldNested1;
 // repeated fields 
     property FieldNested2:TTestNested1 read FFieldNested2 write FFieldNested2;
-    property FieldArr1List:TList<integer> read FFieldArr1List;
-    property FieldArr2List:TList<integer> read FFieldArr2List;
-    property FieldArr3List:TList<string> read FFieldArr3List;
-    property FieldArrE1List:TList<TEnum1> read FFieldArrE1List;
+    property FieldArr1List:TAbstractList<integer> read FFieldArr1List;
+    property FieldArr2List:TAbstractList<integer> read FFieldArr2List;
+    property FieldArr3List:TAbstractList<string> read FFieldArr3List;
+    property FieldArrE1List:TAbstractList<TEnum1> read FFieldArrE1List;
 // fields of imported types 
-    property FieldMArr2List:TProtoBufClassList<TTestMsg0> read FFieldMArr2List;
+    property FieldMArr2List:TAbstractDataList<TTestMsg0> read FFieldMArr2List;
     property FieldImp1:TEnumGlobal read FFieldImp1 write FFieldImp1;
 // extensions 1000 to 1999; 
     property FieldImp2:TEnumGlobal read FFieldImp2 write FFieldImp2;
@@ -133,7 +133,7 @@ type
 implementation
 
 
-constructor TTestMsg0.Create;
+constructor TTestMsg0.Create(AOwner: TObject);
 begin
   inherited;
   RegisterRequiredField(1);
@@ -146,10 +146,8 @@ begin
 end;
 
 function TTestMsg0.LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer; WireType: integer): Boolean;
-var
-  tmpBuf: TProtoBufInput;
 begin
-  Result := inherited LoadSingleFieldFromBuf(ProtoBuf, FieldNumber, WireType);
+  Result := inherited;
   if Result then
     exit;
   case fieldNumber of
@@ -167,8 +165,6 @@ begin
 end;
 
 procedure TTestMsg0.SaveFieldsToBuf(ProtoBuf: TProtoBufOutput);
-var
-  tmpBuf: TProtoBufOutput;
 begin
   inherited;
   ProtoBuf.writeInt32(1, FField1);
@@ -178,7 +174,7 @@ end;
 
 function TTestNested1.LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer; WireType: integer): Boolean;
 begin
-  Result := inherited LoadSingleFieldFromBuf(ProtoBuf, FieldNumber, WireType);
+  Result := inherited;
   if Result then
     exit;
   case fieldNumber of
@@ -197,7 +193,7 @@ begin
 end;
 
 
-constructor TTestMsg1.Create;
+constructor TTestMsg1.Create(AOwner: TObject);
 begin
   inherited;
   FDefField1 := 2;
@@ -209,14 +205,14 @@ begin
   FDefField7 := 100;
   FDefField8 := 1;
   FDefField9 := 1.23e1;
-  FFieldMsg1 := TTestMsg0.Create;
+  FFieldMsg1 := TTestMsg0.Create(Self);
   FFieldE2 := Val2;
-  FFieldNested1 := TTestNested1.Create;
-  FFieldArr1List := TList<integer>.Create;
-  FFieldArr2List := TList<integer>.Create;
-  FFieldArr3List := TList<string>.Create;
-  FFieldArrE1List := TList<TEnum1>.Create;
-  FFieldMArr2List := TProtoBufClassList<TTestMsg0>.Create;
+  FFieldNested1 := TTestNested1.Create(Self);
+  FFieldArr1List := TAbstractList<integer>.Create(Self);
+  FFieldArr2List := TAbstractList<integer>.Create(Self);
+  FFieldArr3List := TAbstractList<string>.Create(Self);
+  FFieldArrE1List := TAbstractList<TEnum1>.Create(Self);
+  FFieldMArr2List := TAbstractDataList<TTestMsg0>.Create(Self);
 end;
 
 destructor TTestMsg1.Destroy;
@@ -235,7 +231,7 @@ function TTestMsg1.LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber:
 var
   tmpBuf: TProtoBufInput;
 begin
-  Result := inherited LoadSingleFieldFromBuf(ProtoBuf, FieldNumber, WireType);
+  Result := inherited;
   if Result then
     exit;
   case fieldNumber of
@@ -286,12 +282,7 @@ begin
       end;
     20:
       begin
-        tmpBuf := ProtoBuf.ReadSubProtoBufInput;
-        try
-          FFieldMsg1.LoadFromBuf(tmpBuf);
-        finally
-          tmpBuf.Free;
-        end;
+        FFieldMsg1.LoadFromBufAsField(ProtoBuf, FieldNumber);
         Result := True;
       end;
     21:
@@ -306,12 +297,7 @@ begin
       end;
     30:
       begin
-        tmpBuf := ProtoBuf.ReadSubProtoBufInput;
-        try
-          FFieldNested1.LoadFromBuf(tmpBuf);
-        finally
-          tmpBuf.Free;
-        end;
+        FFieldNested1.LoadFromBufAsField(ProtoBuf, FieldNumber);
         Result := True;
       end;
     31:
@@ -383,22 +369,10 @@ begin
   ProtoBuf.writeSInt64(7, FDefField7);
   ProtoBuf.writeFixed32(8, FDefField8);
   ProtoBuf.writeFloat(9, FDefField9);
-  tmpBuf:=TProtoBufOutput.Create;
-  try
-    FFieldMsg1.SaveToBuf(tmpBuf);
-    ProtoBuf.writeMessage(20, tmpBuf);
-  finally
-    tmpBuf.Free;
-  end;
+  FFieldMsg1.SaveToBufAsField(ProtoBuf, 20);
   ProtoBuf.writeInt32(21, integer(FFieldE1));
   ProtoBuf.writeInt32(22, integer(FFieldE2));
-  tmpBuf:=TProtoBufOutput.Create;
-  try
-    FFieldNested1.SaveToBuf(tmpBuf);
-    ProtoBuf.writeMessage(30, tmpBuf);
-  finally
-    tmpBuf.Free;
-  end;
+  FFieldNested1.SaveToBufAsField(ProtoBuf, 30);
   ProtoBuf.writeInt32(31, integer(FFieldNested2));
   for i := 0 to FFieldArr1List.Count-1 do
     ProtoBuf.writeInt32(40, FFieldArr1List[i]);
@@ -422,7 +396,7 @@ end;
 
 function TTestMsg1Extension1.LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer; WireType: integer): Boolean;
 begin
-  Result := inherited LoadSingleFieldFromBuf(ProtoBuf, FieldNumber, WireType);
+  Result := inherited;
   if Result then
     exit;
   case fieldNumber of

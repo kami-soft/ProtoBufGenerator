@@ -52,7 +52,7 @@ begin
   sFileName := ExtractFilePath(ParamStr(0)) + 'Msg1.bin';
   Stream := TFileStream.Create(sFileName, fmOpenRead);
   try
-    TestMsg1 := TTestMsg1.Create;
+    TestMsg1 := TTestMsg1.Create(nil);
     try
       TestMsg1.LoadFromStream(Stream);
 
@@ -73,7 +73,7 @@ begin
   sFileName := ExtractFilePath(ParamStr(0)) + 'ExtendedMsg1.bin';
   Stream := TFileStream.Create(sFileName, fmOpenRead);
   try
-    TestExtension := TTestMsg1Extension1.Create;
+    TestExtension := TTestMsg1Extension1.Create(nil);
     try
       TestExtension.LoadFromStream(Stream);
     finally
@@ -98,7 +98,7 @@ begin
   sFileName := ExtractFilePath(ParamStr(0)) + 'Msg1.bin';
   Stream := TFileStream.Create(sFileName, fmCreate);
   try
-    TestMsg1 := TTestMsg1.Create;
+    TestMsg1 := TTestMsg1.Create(nil);
     try
       // prepare data (random fill)
       TestMsg1.DefField1 := 20;
@@ -118,7 +118,7 @@ begin
   sFileName := ExtractFilePath(ParamStr(0)) + 'ExtendedMsg1.bin';
   Stream := TFileStream.Create(sFileName, fmCreate);
   try
-    TestExtension := TTestMsg1Extension1.Create;
+    TestExtension := TTestMsg1Extension1.Create(nil);
     try
       TestExtension.field_name_test_1 := 323;
       TestExtension.field_Name_test_2 := 5432;
@@ -155,8 +155,8 @@ var
 begin
   Stream := TMemoryStream.Create;
   try
-    msgOutput := TTestMsg1.Create;
-    msgInput := TTestMsg1.Create;
+    msgOutput := TTestMsg1.Create(nil);
+    msgInput := TTestMsg1.Create(nil);
     try
       GenerateData(msgOutput);
 
