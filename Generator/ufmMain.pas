@@ -26,6 +26,8 @@ type
     procedure btnOpenProtoFileClick(Sender: TObject);
     procedure btnChooseOutputFolderClick(Sender: TObject);
     procedure btnGenerateClick(Sender: TObject);
+    procedure FormClose(Sender: TObject; var Action: TCloseAction);
+    procedure FormCreate(Sender: TObject);
   private
     { Private declarations }
     procedure Generate(SourceFiles: TStrings; const OutputDir: string);
@@ -39,6 +41,8 @@ var
 implementation
 
 uses
+  System.IOUtils,
+  System.IniFiles,
   Vcl.FileCtrl,
   uProtoBufGenerator;
 
@@ -59,8 +63,8 @@ var
 begin
   FileNames := TStringList.Create;
   try
-    FileNames.Delimiter:=odProtoFile.Files.Delimiter;
-    FileNames.DelimitedText:=edProtoFileName.Text;
+    FileNames.Delimiter := odProtoFile.Files.Delimiter;
+    FileNames.DelimitedText := edProtoFileName.Text;
     Generate(FileNames, edOutputFolder.Text);
     ShowMessage('Complete! Take a look into output directory');
   finally
@@ -72,6 +76,40 @@ procedure TfmMain.btnOpenProtoFileClick(Sender: TObject);
 begin
   if odProtoFile.Execute then
     edProtoFileName.Text := odProtoFile.Files.DelimitedText;
+end;
+
+procedure TfmMain.FormClose(Sender: TObject; var Action: TCloseAction);
+var
+  ini: TIniFile;
+  s: string;
+begin
+  s := TPath.Combine(TPath.GetHomePath, 'DelphiProtoBufGenerator');
+  TDirectory.CreateDirectory(s);
+  s := TPath.Combine(s, 'settings.ini');
+  ini := TIniFile.Create(s);
+  try
+    ini.WriteString('Common', 'ProtoFiles', edProtoFileName.Text);
+    ini.WriteString('Common', 'PasOutputFolder', edOutputFolder.Text);
+  finally
+    ini.Free;
+  end;
+end;
+
+procedure TfmMain.FormCreate(Sender: TObject);
+var
+  ini: TIniFile;
+  s: string;
+begin
+  s := TPath.Combine(TPath.GetHomePath, 'DelphiProtoBufGenerator');
+  TDirectory.CreateDirectory(s);
+  s := TPath.Combine(s, 'settings.ini');
+  ini := TIniFile.Create(s);
+  try
+    edProtoFileName.Text := ini.ReadString('Common', 'ProtoFiles', '');
+    edOutputFolder.Text := ini.ReadString('Common', 'PasOutputFolder', '');
+  finally
+    ini.Free;
+  end;
 end;
 
 procedure TfmMain.Generate(SourceFiles: TStrings; const OutputDir: string);
