@@ -345,6 +345,40 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
       end;
   end;
 
+  procedure WriteBeforeLoadProc(ProtoMsg: TProtoBufMessage; SL: TStrings);
+  var
+    i: integer;
+    Prop: TProtoBufProperty;
+    DelphiProp: TDelphiProperty;
+    b: Boolean;
+  begin
+    b := False;
+    for i := 0 to ProtoMsg.Count - 1 do
+      if ProtoMsg[i].PropKind = ptRepeated then
+        begin
+          b := True;
+          Break;
+        end;
+    if not b then
+      Exit;
+
+    SL.Add('');
+    SL.Add(Format('procedure T%s.BeforeLoad;', [ProtoMsg.Name]));
+    SL.Add('begin');
+    SL.Add('  inherited;');
+    for i := 0 to ProtoMsg.Count - 1 do
+      begin
+        Prop := ProtoMsg[i];
+        if Prop.PropKind = ptRepeated then
+          begin
+            ParsePropType(Prop, Proto, DelphiProp);
+            SL.Add(Format('  F%s.Clear;', [DelphiProp.PropertyName]));
+          end;
+      end;
+
+    SL.Add('end;');
+  end;
+
   procedure WriteLoadProc(ProtoMsg: TProtoBufMessage; SL: TStrings);
   var
     i: integer;
@@ -549,6 +583,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
 
     if bNeedConstructor then
       WriteConstructor(ProtoMsg, SL);
+    WriteBeforeLoadProc(ProtoMsg, SL);
     WriteLoadProc(ProtoMsg, SL);
     WriteSaveProc(ProtoMsg, SL);
   end;
@@ -596,9 +631,11 @@ procedure TProtoBufGenerator.GenerateInterfaceSection(Proto: TProtoFile; SL: TSt
     Prop: TProtoBufProperty;
     DelphiProp: TDelphiProperty;
     s, sdefValue: string;
+    bHasRepeated: Boolean;
   begin
     if ProtoMsg.IsImported then
       Exit;
+    bHasRepeated := False;
     if ProtoMsg.ExtendOf = '' then
       s := 'AbstractData'
     else
@@ -611,8 +648,12 @@ procedure TProtoBufGenerator.GenerateInterfaceSection(Proto: TProtoFile; SL: TSt
         ParsePropType(Prop, Proto, DelphiProp);
         s := Format('    F%s: %s;', [DelphiProp.PropertyName, DelphiProp.PropertyType]);
         SL.Add(s);
+        if Prop.PropKind = ptRepeated then
+          bHasRepeated := True;
       end;
     SL.Add('  strict protected');
+    if bHasRepeated then
+      SL.Add('    procedure BeforeLoad; override;');
     SL.Add('    function LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer; WireType: integer): Boolean; override;');
     SL.Add('    procedure SaveFieldsToBuf(ProtoBuf: TProtoBufOutput); override;');
 
@@ -623,7 +664,6 @@ procedure TProtoBufGenerator.GenerateInterfaceSection(Proto: TProtoFile; SL: TSt
         SL.Add('    destructor Destroy; override;');
         SL.Add('');
       end;
-    SL.Add('');
     for i := 0 to ProtoMsg.Count - 1 do
       begin
         Prop := ProtoMsg[i];
