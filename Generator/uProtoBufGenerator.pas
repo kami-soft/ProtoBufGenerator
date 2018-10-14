@@ -11,7 +11,10 @@ uses
 
 type
   TProtoBufGenerator = class(TObject)
+  public const
+    sDefaultClassName = 'AbstractData';
   strict private
+    FBaseClassName: string;
     procedure GenerateInterfaceSection(Proto: TProtoFile; SL: TStrings);
     procedure GenerateImplementationSection(Proto: TProtoFile; SL: TStrings);
   public
@@ -19,6 +22,8 @@ type
     procedure Generate(Proto: TProtoFile; OutputStream: TStream; Encoding: TEncoding = nil); overload;
     procedure Generate(Proto: TProtoFile; const OutputDir: string; Encoding: TEncoding = nil); overload;
     procedure Generate(const InputFile: string; const OutputDir: string; Encoding: TEncoding = nil); overload;
+
+    property BaseClassName: string read FBaseClassName write FBaseClassName;
   end;
 
 implementation
@@ -239,6 +244,8 @@ procedure TProtoBufGenerator.Generate(Proto: TProtoFile; Output: TStrings);
 var
   SLInterface, SLImplementation: TStrings;
 begin
+  if FBaseClassName = '' then
+    FBaseClassName := sDefaultClassName;
   // write name and interface uses
   SLInterface := TStringList.Create;
   try
@@ -637,7 +644,7 @@ procedure TProtoBufGenerator.GenerateInterfaceSection(Proto: TProtoFile; SL: TSt
       Exit;
     bHasRepeated := False;
     if ProtoMsg.ExtendOf = '' then
-      s := 'AbstractData'
+      s := FBaseClassName
     else
       s := ProtoMsg.ExtendOf;
     SL.Add(Format('  T%s = class(T%s)', [ProtoMsg.Name, s]));

@@ -23,6 +23,8 @@ type
     btnGenerate: TButton;
     edOutputFolder: TEdit;
     btnChooseOutputFolder: TButton;
+    cbbBaseClassName: TComboBox;
+    lblBaseClassName: TLabel;
     procedure btnOpenProtoFileClick(Sender: TObject);
     procedure btnChooseOutputFolderClick(Sender: TObject);
     procedure btnGenerateClick(Sender: TObject);
@@ -63,8 +65,8 @@ var
 begin
   FileNames := TStringList.Create;
   try
-    FileNames.Delimiter:=odProtoFile.Files.Delimiter;
-    FileNames.DelimitedText:=edProtoFileName.Text;
+    FileNames.Delimiter := odProtoFile.Files.Delimiter;
+    FileNames.DelimitedText := edProtoFileName.Text;
     Generate(FileNames, edOutputFolder.Text);
     ShowMessage('Complete! Take a look into output directory');
   finally
@@ -100,6 +102,9 @@ var
   ini: TIniFile;
   s: string;
 begin
+  cbbBaseClassName.Items.Clear;
+  cbbBaseClassName.Items.Add(TProtoBufGenerator.sDefaultClassName);
+
   s := TPath.Combine(TPath.GetHomePath, 'DelphiProtoBufGenerator');
   TDirectory.CreateDirectory(s);
   s := TPath.Combine(s, 'settings.ini');
@@ -107,6 +112,7 @@ begin
   try
     edProtoFileName.Text := ini.ReadString('Common', 'ProtoFiles', '');
     edOutputFolder.Text := ini.ReadString('Common', 'PasOutputFolder', '');
+    cbbBaseClassName.Text := ini.ReadString('Common', 'BaseClassName', TProtoBufGenerator.sDefaultClassName);
   finally
     ini.Free;
   end;
@@ -120,6 +126,7 @@ begin
   System.SysUtils.ForceDirectories(OutputDir);
   Gen := TProtoBufGenerator.Create;
   try
+    Gen.BaseClassName := cbbBaseClassName.Text;
     for i := 0 to SourceFiles.Count - 1 do
       Gen.Generate(SourceFiles[i], edOutputFolder.Text, TEncoding.UTF8);
   finally
