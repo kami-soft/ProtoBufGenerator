@@ -326,17 +326,15 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
 
   procedure WriteLoadProc(ProtoMsg: TProtoBufMessage; SL: TStrings);
   var
-    i: Integer;
+    i, iInsertVarBlock: Integer;
     Prop: TProtoBufProperty;
     DelphiProp: TDelphiProperty;
+    bNeedtmpBuf: Boolean;
   begin
+    bNeedtmpBuf:= False;
     SL.Add('');
     SL.Add(Format('function T%s.LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: Integer; WireType: Integer): Boolean;', [ProtoMsg.Name]));
-    if MsgNeedConstructor(ProtoMsg, Proto) then
-      begin
-        SL.Add('var');
-        SL.Add('  tmpBuf: TProtoBufInput;'); // avoid compiler hint
-      end;
+    iInsertVarBlock:= SL.Count;
     SL.Add('begin');
     SL.Add('  Result := inherited;');
     if ProtoMsg.Count = 0 then
@@ -362,6 +360,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
                 SL.Add(Format('        F%s := %s(ProtoBuf.readEnum);', [DelphiProp.PropertyName, DelphiProp.PropertyType]))
               else
                 begin
+                  bNeedtmpBuf:= True;
                   SL.Add('        tmpBuf := ProtoBuf.ReadSubProtoBufInput;');
                   SL.Add('        try');
                   SL.Add(Format('          F%s.LoadFromBuf(tmpBuf);', [DelphiProp.PropertyName]));
@@ -376,6 +375,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
               begin
                 if PropertyIsPrimitiveNumericPacked(Prop) then
                   begin
+                    bNeedtmpBuf:= True;
                     SL.Add('        if WireType = WIRETYPE_LENGTH_DELIMITED then');
                     SL.Add('          begin');
                     SL.Add('            tmpBuf:=ProtoBuf.ReadSubProtoBufInput;');
@@ -397,6 +397,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
                 begin
                   if (Prop.PropOptions.Value['packed'] = 'true') then
                     begin
+                      bNeedtmpBuf:= True;
                       SL.Add('        if WireType = WIRETYPE_LENGTH_DELIMITED then');
                       SL.Add('          begin');
                       SL.Add('            tmpBuf:=ProtoBuf.ReadSubProtoBufInput;');
@@ -421,24 +422,25 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
       end;
     SL.Add('  end;');
     SL.Add('end;');
+    if bNeedtmpBuf then
+      begin
+        SL.Insert(iInsertVarBlock, '  tmpBuf: TProtoBufInput;');
+        SL.Insert(iInsertVarBlock, 'var');
+      end;
   end;
 
   procedure WriteSaveProc(ProtoMsg: TProtoBufMessage; SL: TStrings);
   var
-    i: Integer;
+    i, iInsertVarBlock: Integer;
     Prop: TProtoBufProperty;
     DelphiProp: TDelphiProperty;
+    bNeedtmpBuf, bNeedCounterVar: Boolean;
   begin
+    bNeedtmpBuf:= False;
+    bNeedCounterVar:= False;
     SL.Add('');
     SL.Add(Format('procedure T%s.SaveFieldsToBuf(ProtoBuf: TProtoBufOutput);', [ProtoMsg.Name]));
-    if MsgNeedConstructor(ProtoMsg, Proto) or MsgContainsRepeatedFields(ProtoMsg) then // avoid compiler hints
-      begin
-        SL.Add('var');
-        if MsgNeedConstructor(ProtoMsg, Proto) then
-          SL.Add('  tmpBuf: TProtoBufOutput;');
-        if MsgContainsRepeatedFields(ProtoMsg) then
-          SL.Add('  i: Integer;');
-      end;
+    iInsertVarBlock:= sl.Count;
     SL.Add('begin');
     SL.Add('  inherited;');
     for i := 0 to ProtoMsg.Count - 1 do
@@ -455,6 +457,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
                 SL.Add(Format('  ProtoBuf.writeInt32(%s, Integer(F%s));', [DelphiProp.tagName, DelphiProp.PropertyName]))
               else
                 begin
+                  bNeedtmpBuf:= True;
                   SL.Add('  tmpBuf:=TProtoBufOutput.Create;');
                   SL.Add('  try');
                   SL.Add(Format('    F%s.SaveToBuf(tmpBuf);', [DelphiProp.PropertyName]));
@@ -470,6 +473,8 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
               begin
                 if PropertyIsPrimitiveNumericPacked(Prop) then
                   begin
+                    bNeedtmpBuf:= True;
+                    bNeedCounterVar:= True;
                     SL.Add('  tmpBuf:=TProtoBufOutput.Create;');
                     SL.Add('  try');
                     SL.Add(Format('    for i := 0 to F%s.Count-1 do', [DelphiProp.PropertyName]));
@@ -481,6 +486,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
                   end
                 else
                   begin
+                    bNeedCounterVar:= True;
                     SL.Add(Format('  for i := 0 to F%s.Count-1 do', [DelphiProp.PropertyName]));
                     SL.Add(Format('    ProtoBuf.write%s(%s, F%s[i]);', [GetProtoBufMethodForScalarType(Prop), DelphiProp.tagName, DelphiProp.PropertyName]));
                   end;
@@ -490,6 +496,8 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
                 begin
                   if Prop.PropOptions.Value['packed'] = 'true' then
                     begin
+                      bNeedtmpBuf:= True;
+                      bNeedCounterVar:= True;
                       SL.Add('  tmpBuf:=TProtoBufOutput.Create;');
                       SL.Add('  try');
                       SL.Add(Format('    for i := 0 to F%s.Count-1 do', [DelphiProp.PropertyName]));
@@ -501,6 +509,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
                     end
                   else
                     begin
+                      bNeedCounterVar:= True;
                       SL.Add(Format('  for i := 0 to F%s.Count-1 do', [DelphiProp.PropertyName]));
                       SL.Add(Format('    ProtoBuf.writeInt32(%s, Integer(F%s[i]));', [DelphiProp.tagName, DelphiProp.PropertyName]));
                     end;
@@ -511,6 +520,15 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
       end;
 
     SL.Add('end;');
+
+    if bNeedtmpBuf or bNeedCounterVar then
+      begin
+        if bNeedCounterVar then
+          SL.Insert(iInsertVarBlock, '  i: Integer;');
+        if bNeedtmpBuf then
+          SL.Insert(iInsertVarBlock, '  tmpBuf: TProtoBufOutput;');
+        SL.Insert(iInsertVarBlock, 'var');
+      end;
   end;
 
   procedure WriteMessageToSL(ProtoMsg: TProtoBufMessage; SL: TStrings);
