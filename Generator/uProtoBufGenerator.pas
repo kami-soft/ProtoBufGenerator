@@ -177,6 +177,7 @@ type
     isObject: Boolean;
     PropertyName: string;
     PropertyType: string;
+    function tagName: string;
   end;
 
 procedure ParsePropType(Prop: TProtoBufProperty; Proto: TProtoFile; out DelphiProp: TDelphiProperty);
@@ -304,7 +305,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
         if Prop.PropOptions.HasValue['default'] then
           SL.Add(Format('  F%s := %s;', [DelphiProp.PropertyName, ReQuoteStr(Prop.PropOptions.Value['default'])]));
         if Prop.PropKind = ptRequired then
-          SL.Add(Format('  RegisterRequiredField(%d);', [Prop.PropFieldNum]));
+          SL.Add(Format('  RegisterRequiredField(%s);', [DelphiProp.tagName]));
       end;
     SL.Add('end;');
 
@@ -349,7 +350,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
       begin
         Prop := ProtoMsg[i];
         ParsePropType(Prop, Proto, DelphiProp);
-        SL.Add(Format('    %d:', [Prop.PropFieldNum]));
+        SL.Add(Format('    %s:', [DelphiProp.tagName]));
         SL.Add('      begin');
         if not DelphiProp.IsList then
           begin
@@ -447,16 +448,16 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
         if not DelphiProp.IsList then
           begin
             if not DelphiProp.isComplex then
-              SL.Add(Format('  ProtoBuf.write%s(%d, F%s);', [GetProtoBufMethodForScalarType(Prop), Prop.PropFieldNum, DelphiProp.PropertyName]))
+              SL.Add(Format('  ProtoBuf.write%s(%s, F%s);', [GetProtoBufMethodForScalarType(Prop), DelphiProp.tagName, DelphiProp.PropertyName]))
             else
               if not DelphiProp.isObject then
-                SL.Add(Format('  ProtoBuf.writeInt32(%d, Integer(F%s));', [Prop.PropFieldNum, DelphiProp.PropertyName]))
+                SL.Add(Format('  ProtoBuf.writeInt32(%s, Integer(F%s));', [DelphiProp.tagName, DelphiProp.PropertyName]))
               else
                 begin
                   SL.Add('  tmpBuf:=TProtoBufOutput.Create;');
                   SL.Add('  try');
                   SL.Add(Format('    F%s.SaveToBuf(tmpBuf);', [DelphiProp.PropertyName]));
-                  SL.Add(Format('    ProtoBuf.writeMessage(%d, tmpBuf);', [Prop.PropFieldNum]));
+                  SL.Add(Format('    ProtoBuf.writeMessage(%s, tmpBuf);', [DelphiProp.tagName]));
                   SL.Add('  finally');
                   SL.Add('    tmpBuf.Free;');
                   SL.Add('  end;');
@@ -472,7 +473,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
                     SL.Add('  try');
                     SL.Add(Format('    for i := 0 to F%s.Count-1 do', [DelphiProp.PropertyName]));
                     SL.Add(Format('      tmpBuf.write%s(F%s[i]);', [GetProtoBufMethodForScalarType(Prop), DelphiProp.PropertyName]));
-                    SL.Add(Format('    ProtoBuf.writeMessage(%d, tmpBuf);', [Prop.PropFieldNum]));
+                    SL.Add(Format('    ProtoBuf.writeMessage(%s, tmpBuf);', [DelphiProp.tagName]));
                     SL.Add('  finally');
                     SL.Add('    tmpBuf.Free;');
                     SL.Add('  end;');
@@ -480,7 +481,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
                 else
                   begin
                     SL.Add(Format('  for i := 0 to F%s.Count-1 do', [DelphiProp.PropertyName]));
-                    SL.Add(Format('    ProtoBuf.write%s(%d, F%s[i]);', [GetProtoBufMethodForScalarType(Prop), Prop.PropFieldNum, DelphiProp.PropertyName]));
+                    SL.Add(Format('    ProtoBuf.write%s(%s, F%s[i]);', [GetProtoBufMethodForScalarType(Prop), DelphiProp.tagName, DelphiProp.PropertyName]));
                   end;
               end
             else
@@ -492,7 +493,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
                       SL.Add('  try');
                       SL.Add(Format('    for i := 0 to F%s.Count-1 do', [DelphiProp.PropertyName]));
                       SL.Add(Format('      tmpBuf.writeRawVarint32(Integer(F%s[i]));', [DelphiProp.PropertyName]));
-                      SL.Add(Format('    ProtoBuf.writeMessage(%d, tmpBuf);', [Prop.PropFieldNum]));
+                      SL.Add(Format('    ProtoBuf.writeMessage(%s, tmpBuf);', [DelphiProp.tagName]));
                       SL.Add('  finally');
                       SL.Add('    tmpBuf.Free;');
                       SL.Add('  end;');
@@ -500,11 +501,11 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
                   else
                     begin
                       SL.Add(Format('  for i := 0 to F%s.Count-1 do', [DelphiProp.PropertyName]));
-                      SL.Add(Format('    ProtoBuf.writeInt32(%d, Integer(F%s[i]));', [Prop.PropFieldNum, DelphiProp.PropertyName]));
+                      SL.Add(Format('    ProtoBuf.writeInt32(%s, Integer(F%s[i]));', [DelphiProp.tagName, DelphiProp.PropertyName]));
                     end;
                 end
               else
-                SL.Add(Format('  F%s.SaveToBuf(ProtoBuf, %d);', [DelphiProp.PropertyName, Prop.PropFieldNum]));
+                SL.Add(Format('  F%s.SaveToBuf(ProtoBuf, %s);', [DelphiProp.PropertyName, DelphiProp.tagName]));
           end;
       end;
 
@@ -589,6 +590,14 @@ procedure TProtoBufGenerator.GenerateInterfaceSection(Proto: TProtoFile; SL: TSt
     SL.Add('    procedure SaveFieldsToBuf(ProtoBuf: TProtoBufOutput); override;');
 
     SL.Add('  public');
+    for i := 0 to ProtoMsg.Count - 1 do
+      begin
+        Prop := ProtoMsg[i];
+        ParsePropType(Prop, Proto, DelphiProp);
+        s := Format('    const %s = %d;', [DelphiProp.tagName, Prop.PropFieldNum]);
+        SL.Add(s);
+      end;
+    SL.Add('');
     if MsgNeedConstructor(ProtoMsg, Proto) then
       begin
         SL.Add('    constructor Create; override;');
@@ -685,6 +694,13 @@ begin
   finally
     SL.Free;
   end;
+end;
+
+{ TDelphiProperty }
+
+function TDelphiProperty.tagName: string;
+begin
+  Result:= 'tag_' + PropertyName;
 end;
 
 end.
