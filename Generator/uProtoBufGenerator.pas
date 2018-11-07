@@ -595,7 +595,6 @@ procedure TProtoBufGenerator.GenerateInterfaceSection(Proto: TProtoFile; SL: TSt
         SL.Add('    destructor Destroy; override;');
         SL.Add('');
       end;
-    SL.Add('');
     for i := 0 to ProtoMsg.Count - 1 do
       begin
         Prop := ProtoMsg[i];
