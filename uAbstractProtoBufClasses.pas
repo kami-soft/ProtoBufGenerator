@@ -11,12 +11,16 @@ uses
   pbOutput;
 
 type
+  TFieldState = set of (fsRequired, fsHasValue);
+
   TAbstractProtoBufClass = class(TObject)
   strict private
   type
-    TRequiredFields = TDictionary<integer, Boolean>;
+    TFieldStates = TDictionary<integer, TFieldState>;
   strict private
-    FRequiredFields: TRequiredFields;
+    FFieldStates: TFieldStates;
+    function GetFieldState(Tag: Integer): TFieldState;
+    procedure AddFieldState(Tag: integer; AFieldState: TFieldState);
   strict protected
     procedure AddLoadedField(Tag: integer);
     procedure RegisterRequiredField(Tag: integer);
@@ -54,10 +58,21 @@ uses
 
 { TAbstractProtoBufClass }
 
+function TAbstractProtoBufClass.GetFieldState(Tag: Integer): TFieldState;
+begin
+  Result:= [];
+  FFieldStates.TryGetValue(Tag, Result);
+end;
+
+procedure TAbstractProtoBufClass.AddFieldState(Tag: integer;
+  AFieldState: TFieldState);
+begin
+  FFieldStates.AddOrSetValue(Tag, GetFieldState(Tag) + AFieldState);
+end;
+
 procedure TAbstractProtoBufClass.AddLoadedField(Tag: integer);
 begin
-  if FRequiredFields.ContainsKey(Tag) then
-    FRequiredFields[Tag] := True;
+  AddFieldState(Tag, [fsHasValue]);
 end;
 
 procedure TAbstractProtoBufClass.AfterLoad;
@@ -80,33 +95,37 @@ begin
 end;
 
 procedure TAbstractProtoBufClass.BeforeLoad;
+var
+  pair: TPair<integer, TFieldState>;
 begin
-
+  //clear HasValue flags
+  for pair in FFieldStates do
+    FFieldStates.Items[pair.Key]:= pair.Value - [fsHasValue];
 end;
 
 constructor TAbstractProtoBufClass.Create;
 begin
   inherited Create;
-  FRequiredFields := TRequiredFields.Create;
+  FFieldStates:= TFieldStates.Create;
 end;
 
 destructor TAbstractProtoBufClass.Destroy;
 begin
-  FreeAndNil(FRequiredFields);
+  FreeAndNil(FFieldStates);
   inherited;
 end;
 
 function TAbstractProtoBufClass.IsAllRequiredLoaded: Boolean;
 var
-  b: Boolean;
+  state: TFieldState;
 begin
   Result := True;
-  for b in FRequiredFields.Values do
-    if not b then
-      begin
-        Result := False;
-        Break;
-      end;
+  for state in FFieldStates.Values do
+    if state * [fsRequired, fsHasValue] = [fsRequired] then
+    begin
+      Result:= False;
+      Break;
+    end;
 end;
 
 procedure TAbstractProtoBufClass.LoadFromBuf(ProtoBuf: TProtoBufInput);
@@ -172,7 +191,7 @@ end;
 
 procedure TAbstractProtoBufClass.RegisterRequiredField(Tag: integer);
 begin
-  FRequiredFields.Add(Tag, False);
+  AddFieldState(Tag, [fsRequired]);
 end;
 
 procedure TAbstractProtoBufClass.SaveToBuf(ProtoBuf: TProtoBufOutput);
