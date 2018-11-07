@@ -609,7 +609,7 @@ procedure TProtoBufGenerator.GenerateInterfaceSection(Proto: TProtoFile; SL: TSt
         Prop := ProtoMsg[i];
         ParsePropType(Prop, Proto, DelphiProp);
         if Prop.PropComment <> '' then
-          SL.Add('//' + Prop.PropComment);
+          SL.Add('    //' + Prop.PropComment);
         s := Format('    property %s:%s read F%s', [DelphiProp.PropertyName, DelphiProp.PropertyType, DelphiProp.PropertyName]);
         if not(DelphiProp.IsList or DelphiProp.isObject) then
           s := s + Format(' write F%s', [DelphiProp.PropertyName]);
