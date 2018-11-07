@@ -293,7 +293,6 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
     DelphiProp: TDelphiProperty;
     i: Integer;
   begin
-    SL.Add('');
     SL.Add(Format('constructor T%s.Create;', [ProtoMsg.Name]));
     SL.Add('begin');
     SL.Add('  inherited;');
@@ -322,6 +321,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
       end;
     SL.Add('  inherited;');
     SL.Add('end;');
+    SL.Add('');
   end;
 
   procedure WriteLoadProc(ProtoMsg: TProtoBufMessage; SL: TStrings);
@@ -332,7 +332,6 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
     bNeedtmpBuf: Boolean;
   begin
     bNeedtmpBuf:= False;
-    SL.Add('');
     SL.Add(Format('function T%s.LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: Integer; WireType: Integer): Boolean;', [ProtoMsg.Name]));
     iInsertVarBlock:= SL.Count;
     SL.Add('begin');
@@ -424,6 +423,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
     SL.Add('    Result:= False;');
     SL.Add('  end;');
     SL.Add('end;');
+    SL.Add('');
     if bNeedtmpBuf then
       begin
         SL.Insert(iInsertVarBlock, '  tmpBuf: TProtoBufInput;');
@@ -440,7 +440,6 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
   begin
     bNeedtmpBuf:= False;
     bNeedCounterVar:= False;
-    SL.Add('');
     SL.Add(Format('procedure T%s.SaveFieldsToBuf(ProtoBuf: TProtoBufOutput);', [ProtoMsg.Name]));
     iInsertVarBlock:= sl.Count;
     SL.Add('begin');
@@ -522,6 +521,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
       end;
 
     SL.Add('end;');
+    SL.Add('');
 
     if bNeedtmpBuf or bNeedCounterVar then
       begin
@@ -541,6 +541,8 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
       Exit;
     bNeedConstructor := MsgNeedConstructor(ProtoMsg, Proto);
 
+    SL.Add(Format('{ T%s }', [ProtoMsg.Name]));
+    SL.Add('');
     if bNeedConstructor then
       WriteConstructor(ProtoMsg, SL);
     WriteLoadProc(ProtoMsg, SL);
@@ -551,13 +553,11 @@ var
   i: Integer;
 begin
   SL.Add('implementation');
+  SL.Add('');
 
   for i := 0 to Proto.ProtoBufMessages.Count - 1 do
     if not Proto.ProtoBufMessages[i].IsImported then
-      begin
         WriteMessageToSL(Proto.ProtoBufMessages[i], SL);
-        SL.Add('');
-      end;
   SL.Add('end.');
 end;
 
