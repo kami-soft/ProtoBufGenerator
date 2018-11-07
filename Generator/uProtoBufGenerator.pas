@@ -29,7 +29,7 @@ uses
 function ProtoPropTypeToDelphiType(const PropTypeName: string): string;
 var
   StandartType: TScalarPropertyType;
-  i: integer;
+  i: Integer;
 begin
   StandartType := StrToPropertyType(PropTypeName);
   case StandartType of
@@ -38,7 +38,7 @@ begin
     sptFloat:
       Result := 'Single';
     sptInt32:
-      Result := 'integer';
+      Result := 'Integer';
     sptInt64:
       Result := 'Int64';
     sptuInt32:
@@ -46,15 +46,15 @@ begin
     sptUint64:
       Result := 'UInt64';
     sptSInt32:
-      Result := 'integer';
+      Result := 'Integer';
     sptSInt64:
       Result := 'Int64';
     sptFixed32:
-      Result := 'integer';
+      Result := 'Integer';
     sptFixed64:
       Result := 'Int64';
     sptSFixed32:
-      Result := 'integer';
+      Result := 'Integer';
     sptSFixed64:
       Result := 'Int64';
     sptBool:
@@ -205,7 +205,7 @@ end;
 
 function MsgNeedConstructor(ProtoMsg: TProtoBufMessage; Proto: TProtoFile): Boolean;
 var
-  i: integer;
+  i: Integer;
   DelphiProp: TDelphiProperty;
   Prop: TProtoBufProperty;
 begin
@@ -222,7 +222,7 @@ end;
 
 function MsgContainsRepeatedFields(ProtoMsg: TProtoBufMessage): Boolean;
 var
-  i: integer;
+  i: Integer;
 begin
   Result := False;
   for i := 0 to ProtoMsg.Count - 1 do
@@ -289,7 +289,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
   var
     Prop: TProtoBufProperty;
     DelphiProp: TDelphiProperty;
-    i: integer;
+    i: Integer;
   begin
     SL.Add('');
     SL.Add(Format('constructor T%s.Create;', [ProtoMsg.Name]));
@@ -324,12 +324,12 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
 
   procedure WriteLoadProc(ProtoMsg: TProtoBufMessage; SL: TStrings);
   var
-    i: integer;
+    i: Integer;
     Prop: TProtoBufProperty;
     DelphiProp: TDelphiProperty;
   begin
     SL.Add('');
-    SL.Add(Format('function T%s.LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer; WireType: integer): Boolean;', [ProtoMsg.Name]));
+    SL.Add(Format('function T%s.LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: Integer; WireType: Integer): Boolean;', [ProtoMsg.Name]));
     if MsgNeedConstructor(ProtoMsg, Proto) then
       begin
         SL.Add('var');
@@ -423,7 +423,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
 
   procedure WriteSaveProc(ProtoMsg: TProtoBufMessage; SL: TStrings);
   var
-    i: integer;
+    i: Integer;
     Prop: TProtoBufProperty;
     DelphiProp: TDelphiProperty;
   begin
@@ -435,7 +435,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
         if MsgNeedConstructor(ProtoMsg, Proto) then
           SL.Add('  tmpBuf: TProtoBufOutput;');
         if MsgContainsRepeatedFields(ProtoMsg) then
-          SL.Add('  i: integer;');
+          SL.Add('  i: Integer;');
       end;
     SL.Add('begin');
     SL.Add('  inherited;');
@@ -450,7 +450,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
               SL.Add(Format('  ProtoBuf.write%s(%d, F%s);', [GetProtoBufMethodForScalarType(Prop), Prop.PropFieldNum, DelphiProp.PropertyName]))
             else
               if not DelphiProp.isObject then
-                SL.Add(Format('  ProtoBuf.writeInt32(%d, integer(F%s));', [Prop.PropFieldNum, DelphiProp.PropertyName]))
+                SL.Add(Format('  ProtoBuf.writeInt32(%d, Integer(F%s));', [Prop.PropFieldNum, DelphiProp.PropertyName]))
               else
                 begin
                   SL.Add('  tmpBuf:=TProtoBufOutput.Create;');
@@ -491,7 +491,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
                       SL.Add('  tmpBuf:=TProtoBufOutput.Create;');
                       SL.Add('  try');
                       SL.Add(Format('    for i := 0 to F%s.Count-1 do', [DelphiProp.PropertyName]));
-                      SL.Add(Format('      tmpBuf.writeRawVarint32(integer(F%s[i]));', [DelphiProp.PropertyName]));
+                      SL.Add(Format('      tmpBuf.writeRawVarint32(Integer(F%s[i]));', [DelphiProp.PropertyName]));
                       SL.Add(Format('    ProtoBuf.writeMessage(%d, tmpBuf);', [Prop.PropFieldNum]));
                       SL.Add('  finally');
                       SL.Add('    tmpBuf.Free;');
@@ -500,7 +500,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
                   else
                     begin
                       SL.Add(Format('  for i := 0 to F%s.Count-1 do', [DelphiProp.PropertyName]));
-                      SL.Add(Format('    ProtoBuf.writeInt32(%d, integer(F%s[i]));', [Prop.PropFieldNum, DelphiProp.PropertyName]));
+                      SL.Add(Format('    ProtoBuf.writeInt32(%d, Integer(F%s[i]));', [Prop.PropFieldNum, DelphiProp.PropertyName]));
                     end;
                 end
               else
@@ -526,7 +526,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
   end;
 
 var
-  i: integer;
+  i: Integer;
 begin
   SL.Add('');
   SL.Add('implementation');
@@ -544,7 +544,7 @@ end;
 procedure TProtoBufGenerator.GenerateInterfaceSection(Proto: TProtoFile; SL: TStrings);
   procedure WriteEnumToSL(ProtoEnum: TProtoBufEnum; SL: TStrings);
   var
-    i: integer;
+    i: Integer;
     s: string;
   begin
     if ProtoEnum.IsImported then
@@ -564,7 +564,7 @@ procedure TProtoBufGenerator.GenerateInterfaceSection(Proto: TProtoFile; SL: TSt
 
   procedure WriteMessageToSL(ProtoMsg: TProtoBufMessage; SL: TStrings);
   var
-    i: integer;
+    i: Integer;
     Prop: TProtoBufProperty;
     DelphiProp: TDelphiProperty;
     s, sdefValue: string;
@@ -585,7 +585,7 @@ procedure TProtoBufGenerator.GenerateInterfaceSection(Proto: TProtoFile; SL: TSt
         SL.Add(s);
       end;
     SL.Add('  strict protected');
-    SL.Add('    function LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer; WireType: integer): Boolean; override;');
+    SL.Add('    function LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: Integer; WireType: Integer): Boolean; override;');
     SL.Add('    procedure SaveFieldsToBuf(ProtoBuf: TProtoBufOutput); override;');
 
     SL.Add('  public');
@@ -618,7 +618,7 @@ procedure TProtoBufGenerator.GenerateInterfaceSection(Proto: TProtoFile; SL: TSt
   end;
 
 var
-  i: integer;
+  i: Integer;
 begin
   SL.Add(Format('unit %s;', [Proto.Name]));
   SL.Add('');
@@ -668,7 +668,7 @@ procedure TProtoBufGenerator.Generate(const InputFile, OutputDir: string; Encodi
 var
   Proto: TProtoFile;
   SL: TStringList;
-  iPos: integer;
+  iPos: Integer;
 begin
   SL := TStringList.Create;
   try
