@@ -530,16 +530,14 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
 var
   i: Integer;
 begin
-  SL.Add('');
   SL.Add('implementation');
 
   for i := 0 to Proto.ProtoBufMessages.Count - 1 do
     if not Proto.ProtoBufMessages[i].IsImported then
       begin
-        SL.Add('');
         WriteMessageToSL(Proto.ProtoBufMessages[i], SL);
+        SL.Add('');
       end;
-  SL.Add('');
   SL.Add('end.');
 end;
 
