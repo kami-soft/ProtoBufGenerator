@@ -533,6 +533,27 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
       end;
   end;
 
+  procedure WriteSetterProcs(ProtoMsg: TProtoBufMessage; SL: TStrings);
+  var
+    i: Integer;
+    Prop: TProtoBufProperty;
+    DelphiProp: TDelphiProperty;
+  begin
+    for i := 0 to ProtoMsg.Count - 1 do
+      begin
+        Prop := ProtoMsg[i];
+        ParsePropType(Prop, Proto, DelphiProp);
+        SL.Add(Format('procedure T%s.Set%s(Tag: Integer; const Value: %s);',
+          [ProtoMsg.Name, DelphiProp.PropertyName, DelphiProp.PropertyType]));
+        SL.Add('begin');
+        SL.Add(Format('  F%s:= Value;', [DelphiProp.PropertyName]));
+        SL.Add('  FieldHasValue[Tag]:= True;');
+        SL.Add('end;');
+        SL.Add('');
+      end;
+
+  end;
+
   procedure WriteMessageToSL(ProtoMsg: TProtoBufMessage; SL: TStrings);
   var
     bNeedConstructor: Boolean;
@@ -547,6 +568,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
       WriteConstructor(ProtoMsg, SL);
     WriteLoadProc(ProtoMsg, SL);
     WriteSaveProc(ProtoMsg, SL);
+    WriteSetterProcs(ProtoMsg, SL);
   end;
 
 var
@@ -597,6 +619,7 @@ procedure TProtoBufGenerator.GenerateInterfaceSection(Proto: TProtoFile; SL: TSt
       s := ProtoMsg.ExtendOf;
     SL.Add(Format('  T%s = class(T%s)', [ProtoMsg.Name, s]));
     SL.Add('  strict private');
+    //field definitions
     for i := 0 to ProtoMsg.Count - 1 do
       begin
         Prop := ProtoMsg[i];
@@ -604,6 +627,16 @@ procedure TProtoBufGenerator.GenerateInterfaceSection(Proto: TProtoFile; SL: TSt
         s := Format('    F%s: %s;', [DelphiProp.PropertyName, DelphiProp.PropertyType]);
         SL.Add(s);
       end;
+    SL.Add('');
+    //property setters
+    for i := 0 to ProtoMsg.Count - 1 do
+      begin
+        Prop := ProtoMsg[i];
+        ParsePropType(Prop, Proto, DelphiProp);
+        s := Format('    procedure Set%s(Tag: Integer; const Value: %s);', [DelphiProp.PropertyName, DelphiProp.PropertyType]);
+        SL.Add(s);
+      end;
+
     SL.Add('  strict protected');
     SL.Add('    function LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: Integer; WireType: Integer): Boolean; override;');
     SL.Add('    procedure SaveFieldsToBuf(ProtoBuf: TProtoBufOutput); override;');
@@ -629,15 +662,24 @@ procedure TProtoBufGenerator.GenerateInterfaceSection(Proto: TProtoFile; SL: TSt
         ParsePropType(Prop, Proto, DelphiProp);
         if Prop.PropComment <> '' then
           SL.Add('    //' + Prop.PropComment);
-        s := Format('    property %s: %s read F%s', [DelphiProp.PropertyName, DelphiProp.PropertyType, DelphiProp.PropertyName]);
-        if not DelphiProp.readOnlyDelphiProperty then
-          s := s + Format(' write F%s', [DelphiProp.PropertyName]);
-        if Prop.PropOptions.HasValue['default'] then
+        if DelphiProp.readOnlyDelphiProperty then
           begin
-            sdefValue := Prop.PropOptions.Value['default'];
-            if StartsStr('"', sdefValue) or ContainsStr(sdefValue, '.') or ContainsStr(sdefValue, 'e') then
-              s := s + '; //';
-            s := s + Format(' default %s', [ReQuoteStr(sdefValue)]);
+            s := Format('    property %s: %s read F%s',
+              [DelphiProp.PropertyName, DelphiProp.PropertyType,
+              DelphiProp.PropertyName]);
+          end else
+          begin
+            s := Format('    property %s: %s index %s read F%s write Set%s',
+              [DelphiProp.PropertyName, DelphiProp.PropertyType,
+              DelphiProp.tagName, DelphiProp.PropertyName,
+              DelphiProp.PropertyName]);
+            if Prop.PropOptions.HasValue['default'] then
+              begin
+                sdefValue := Prop.PropOptions.Value['default'];
+                if StartsStr('"', sdefValue) or ContainsStr(sdefValue, '.') or ContainsStr(sdefValue, 'e') then
+                  s := s + '; //';
+                s := s + Format(' default %s', [ReQuoteStr(sdefValue)]);
+              end;
           end;
         s := s + ';';
         SL.Add(s);
