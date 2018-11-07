@@ -178,6 +178,7 @@ type
     PropertyName: string;
     PropertyType: string;
     function tagName: string;
+    function readOnlyDelphiProperty: Boolean;
   end;
 
 procedure ParsePropType(Prop: TProtoBufProperty; Proto: TProtoFile; out DelphiProp: TDelphiProperty);
@@ -611,7 +612,7 @@ procedure TProtoBufGenerator.GenerateInterfaceSection(Proto: TProtoFile; SL: TSt
         if Prop.PropComment <> '' then
           SL.Add('    //' + Prop.PropComment);
         s := Format('    property %s: %s read F%s', [DelphiProp.PropertyName, DelphiProp.PropertyType, DelphiProp.PropertyName]);
-        if not(DelphiProp.IsList or DelphiProp.isObject) then
+        if not DelphiProp.readOnlyDelphiProperty then
           s := s + Format(' write F%s', [DelphiProp.PropertyName]);
         if Prop.PropOptions.HasValue['default'] then
           begin
@@ -697,6 +698,11 @@ begin
 end;
 
 { TDelphiProperty }
+
+function TDelphiProperty.readOnlyDelphiProperty: Boolean;
+begin
+  Result:= IsList or isObject;
+end;
 
 function TDelphiProperty.tagName: string;
 begin
