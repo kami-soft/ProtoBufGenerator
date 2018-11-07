@@ -32,7 +32,7 @@ type
     procedure AfterLoad; virtual;
 
     function LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer; WireType: integer): Boolean; virtual;
-    procedure SaveFieldsToBuf(ProtoBuf: TProtoBufOutput); virtual; abstract;
+    procedure SaveFieldsToBuf(ProtoBuf: TProtoBufOutput); virtual;
   public
     constructor Create; virtual;
     destructor Destroy; override;
@@ -209,6 +209,12 @@ end;
 procedure TAbstractProtoBufClass.RegisterRequiredField(Tag: integer);
 begin
   AddFieldState(Tag, [fsRequired]);
+end;
+
+procedure TAbstractProtoBufClass.SaveFieldsToBuf(ProtoBuf: TProtoBufOutput);
+begin
+  if not AllRequiredFieldsValid then
+    raise EStreamError.CreateFmt('Saving %s: not all required fields have been set', [ClassName]);
 end;
 
 procedure TAbstractProtoBufClass.SaveToBuf(ProtoBuf: TProtoBufOutput);
