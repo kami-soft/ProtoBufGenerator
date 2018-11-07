@@ -20,7 +20,10 @@ type
   strict private
     FFieldStates: TFieldStates;
     function GetFieldState(Tag: Integer): TFieldState;
-    procedure AddFieldState(Tag: integer; AFieldState: TFieldState);
+    procedure AddFieldState(Tag: Integer; AFieldState: TFieldState);
+    procedure ClearFieldState(Tag: Integer; AFieldState: TFieldState);
+    function GetFieldHasValue(Tag: Integer): Boolean;
+    procedure SetFieldHasValue(Tag: Integer; const Value: Boolean);
   strict protected
     procedure AddLoadedField(Tag: integer);
     procedure RegisterRequiredField(Tag: integer);
@@ -43,6 +46,8 @@ type
 
     procedure LoadFromBuf(ProtoBuf: TProtoBufInput);
     procedure SaveToBuf(ProtoBuf: TProtoBufOutput);
+
+    property FieldHasValue[Tag: Integer]: Boolean read GetFieldHasValue write SetFieldHasValue;
   end;
 
   TProtoBufClassList<T: TAbstractProtoBufClass, constructor> = class(TObjectList<T>)
@@ -103,6 +108,12 @@ begin
     FFieldStates.Items[pair.Key]:= pair.Value - [fsHasValue];
 end;
 
+procedure TAbstractProtoBufClass.ClearFieldState(Tag: Integer;
+  AFieldState: TFieldState);
+begin
+  FFieldStates.AddOrSetValue(Tag, GetFieldState(Tag) - AFieldState);
+end;
+
 constructor TAbstractProtoBufClass.Create;
 begin
   inherited Create;
@@ -113,6 +124,11 @@ destructor TAbstractProtoBufClass.Destroy;
 begin
   FreeAndNil(FFieldStates);
   inherited;
+end;
+
+function TAbstractProtoBufClass.GetFieldHasValue(Tag: Integer): Boolean;
+begin
+  Result:= fsHasValue in GetFieldState(Tag);
 end;
 
 function TAbstractProtoBufClass.IsAllRequiredLoaded: Boolean;
@@ -210,6 +226,14 @@ begin
   finally
     pb.Free;
   end;
+end;
+
+procedure TAbstractProtoBufClass.SetFieldHasValue(Tag: Integer;
+  const Value: Boolean);
+begin
+  if Value then
+    AddFieldState(Tag, [fsHasValue]) else
+    ClearFieldState(Tag, [fsHasValue]);
 end;
 
 { TProtoBufList<T> }
