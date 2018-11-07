@@ -304,7 +304,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
         if DelphiProp.IsList or DelphiProp.isObject then
           SL.Add(Format('  F%s := %s.Create;', [DelphiProp.PropertyName, DelphiProp.PropertyType]));
         if Prop.PropOptions.HasValue['default'] then
-          SL.Add(Format('  F%s := %s;', [DelphiProp.PropertyName, ReQuoteStr(Prop.PropOptions.Value['default'])]));
+          SL.Add(Format('  %s%s := %s;', [IfThen(DelphiProp.readOnlyDelphiProperty, 'F', ''), DelphiProp.PropertyName, ReQuoteStr(Prop.PropOptions.Value['default'])]));
         if Prop.PropKind = ptRequired then
           SL.Add(Format('  RegisterRequiredField(%s);', [DelphiProp.tagName]));
       end;
