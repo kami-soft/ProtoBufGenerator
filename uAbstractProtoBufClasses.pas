@@ -27,7 +27,6 @@ type
   strict protected
     procedure AddLoadedField(Tag: integer);
     procedure RegisterRequiredField(Tag: integer);
-    function IsAllRequiredLoaded: Boolean;
 
     procedure BeforeLoad; virtual;
     procedure AfterLoad; virtual;
@@ -46,6 +45,8 @@ type
 
     procedure LoadFromBuf(ProtoBuf: TProtoBufInput);
     procedure SaveToBuf(ProtoBuf: TProtoBufOutput);
+
+    function AllRequiredFieldsValid: Boolean;
 
     property FieldHasValue[Tag: Integer]: Boolean read GetFieldHasValue write SetFieldHasValue;
   end;
@@ -131,7 +132,7 @@ begin
   Result:= fsHasValue in GetFieldState(Tag);
 end;
 
-function TAbstractProtoBufClass.IsAllRequiredLoaded: Boolean;
+function TAbstractProtoBufClass.AllRequiredFieldsValid: Boolean;
 var
   state: TFieldState;
 begin
@@ -161,8 +162,8 @@ begin
         AddLoadedField(FieldNumber);
       Tag := ProtoBuf.readTag;
     end;
-  if not IsAllRequiredLoaded then
-    raise EStreamError.Create('not enought fields');
+  if not AllRequiredFieldsValid then
+    raise EStreamError.CreateFmt('Loading %s: not all required fields have been loaded', [ClassName]);
 
   AfterLoad;
 end;
