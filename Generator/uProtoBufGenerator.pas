@@ -550,6 +550,8 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
       begin
         Prop := ProtoMsg[i];
         ParsePropType(Prop, Proto, DelphiProp);
+        if DelphiProp.readOnlyDelphiProperty then
+          Continue;
         SL.Add(Format('procedure T%s.Set%s(Tag: Integer; const Value: %s);',
           [ProtoMsg.Name, DelphiProp.PropertyName, DelphiProp.PropertyType]));
         SL.Add('begin');
@@ -640,6 +642,8 @@ procedure TProtoBufGenerator.GenerateInterfaceSection(Proto: TProtoFile; SL: TSt
       begin
         Prop := ProtoMsg[i];
         ParsePropType(Prop, Proto, DelphiProp);
+        if DelphiProp.readOnlyDelphiProperty then
+          Continue;
         s := Format('    procedure Set%s(Tag: Integer; const Value: %s);', [DelphiProp.PropertyName, DelphiProp.PropertyType]);
         SL.Add(s);
       end;
