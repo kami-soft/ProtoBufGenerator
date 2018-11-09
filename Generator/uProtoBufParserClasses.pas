@@ -547,11 +547,8 @@ begin
     end;
   SkipRequiredChar(Proto, iPos, '}');
 
-  Sort(TComparer<TProtoBufProperty>.Construct(
-    function(const Left, Right: TProtoBufProperty): integer
-    begin
-      Result := Left.PropFieldNum - Right.PropFieldNum;
-    end));
+  //do NOT sort field definitions by FieldNumber; order is important for OneOf,
+  //also better to keep order of declaration the same as in .proto file
 end;
 
 { TProtoFile }
