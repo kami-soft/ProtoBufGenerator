@@ -19,6 +19,16 @@ uses
   uProtoBufParserAbstractClasses;
 
 type
+  //anchestor class:
+  TestTAbstractProtoBufParserItem = class(TTestCase)
+  strict protected
+    FLastiPos: Integer;
+  public
+    procedure CallParseFromProto(const Proto: string; AParserItem: TAbstractProtoBufParserItem);
+
+    property LastiPos: Integer read FLastiPos;
+  end;
+
   // Test methods for class TProtoBufPropOption
 
   TestTProtoBufPropOption = class(TTestCase)
@@ -64,6 +74,21 @@ type
   TestTProtoBufEnum = class(TTestCase)
   strict private
     FProtoBufEnum: TProtoBufEnum;
+  public
+    procedure SetUp; override;
+    procedure TearDown; override;
+  published
+    procedure TestParseFromProto;
+  end;
+  // Test methods for class TProtoBufOne
+
+  TestTProtoBufOneOf = class(TestTAbstractProtoBufParserItem)
+  strict private
+    FProtoBufProperty: TProtoBufProperty;
+
+    procedure ParserErrorNameMissing;
+    procedure ParserErrorOpenBracketMissing;
+    procedure ParserErrorUnexpectedFieldNumber;
   public
     procedure SetUp; override;
     procedure TearDown; override;
@@ -118,6 +143,15 @@ implementation
 
 uses
   System.SysUtils;
+
+{ TestTAbstractProtoBufParserItem }
+
+procedure TestTAbstractProtoBufParserItem.CallParseFromProto(
+  const Proto: string; AParserItem: TAbstractProtoBufParserItem);
+begin
+  FLastiPos:= 1;
+  AParserItem.ParseFromProto(Proto, FLastiPos);
+end;
 
 procedure TestTProtoBufPropOption.SetUp;
 begin
@@ -542,17 +576,60 @@ begin
   // all others check tested in another tests in TestuProtoBufParserClasses.pas
 end;
 
+{ TestTProtoBufOneOf }
+
+procedure TestTProtoBufOneOf.ParserErrorNameMissing;
+begin
+  CallParseFromProto('oneof { }', FProtoBufProperty);
+end;
+
+procedure TestTProtoBufOneOf.ParserErrorOpenBracketMissing;
+begin
+  CallParseFromProto('oneof field_oneof', FProtoBufProperty);
+end;
+
+procedure TestTProtoBufOneOf.ParserErrorUnexpectedFieldNumber;
+begin
+  CallParseFromProto('oneof field_oneof = 25 { }', FProtoBufProperty);
+end;
+
+procedure TestTProtoBufOneOf.SetUp;
+begin
+  inherited;
+  FProtoBufProperty := TProtoBufProperty.Create(nil);
+end;
+
+procedure TestTProtoBufOneOf.TearDown;
+begin
+  inherited;
+  FProtoBufProperty.Free;
+  FProtoBufProperty := nil;
+end;
+
+procedure TestTProtoBufOneOf.TestParseFromProto;
+begin
+  CallParseFromProto('oneof field_oneof { }}', FProtoBufProperty);
+  CheckTrue(ptOneOf = FProtoBufProperty.PropKind);
+  CheckEquals('field_oneof', FProtoBufProperty.PropType);
+  CheckEquals('field_oneof', FProtoBufProperty.Name);
+  CheckEquals(0, FProtoBufProperty.PropFieldNum); //oneof has no num!
+  CheckEquals(0, FProtoBufProperty.PropOptions.Count);
+  CheckEquals('', FProtoBufProperty.PropComment);
+
+  CheckException(ParserErrorNameMissing, Exception, 'ParserErrorNameMissing did not raise Exception');
+  CheckException(ParserErrorOpenBracketMissing, Exception, 'ParserErrorOpenBracketMissing did not raise Exception');
+  CheckException(ParserErrorUnexpectedFieldNumber, Exception, 'ParserErrorUnexpectedFieldNumber did not raise Exception');
+end;
+
 initialization
-
-// Register any test cases with the test runner
-RegisterTest(TestTProtoBufPropOption.Suite);
-RegisterTest(TestTProtoBufPropOptions.Suite);
-RegisterTest(TestTProtoBufProperty.Suite);
-RegisterTest(TestTProtoBufEnumValue.Suite);
-RegisterTest(TestTProtoBufEnum.Suite);
-RegisterTest(TestTProtoBufMessage.Suite);
-RegisterTest(TestTProtoBufEnumList.Suite);
-RegisterTest(TestTProtoBufMessageList.Suite);
-RegisterTest(TestTProtoFile.Suite);
-
+  RegisterTest(TestTProtoBufPropOption.Suite);
+  RegisterTest(TestTProtoBufPropOptions.Suite);
+  RegisterTest(TestTProtoBufProperty.Suite);
+  RegisterTest(TestTProtoBufOneOf.Suite);
+  RegisterTest(TestTProtoBufEnumValue.Suite);
+  RegisterTest(TestTProtoBufEnum.Suite);
+  RegisterTest(TestTProtoBufMessage.Suite);
+  RegisterTest(TestTProtoBufEnumList.Suite);
+  RegisterTest(TestTProtoBufMessageList.Suite);
+  RegisterTest(TestTProtoFile.Suite);
 end.
