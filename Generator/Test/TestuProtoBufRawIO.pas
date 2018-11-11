@@ -22,11 +22,21 @@ type
 
   TestProtoBufRawIO = class(TTestCase)
   strict private
+    procedure InputErrorVarInt32EOF;
+    procedure InputErrorVarInt32Unterminated;
+    procedure InputErrorVarInt32ToLong;
+    procedure InputErrorStringNegativeSize;
+    procedure InputErrorStringEOF;
+    procedure InputErrorBytesNegativeSize;
+    procedure InputErrorBytesEOF;
+  private
+    procedure DoReadRawVarIntForError(ABytes: Pointer; ASize: Integer);
   public
     procedure SetUp; override;
     procedure TearDown; override;
   published
     procedure TestVarint;
+    procedure TestVarintErrors;
     procedure TestReadLittleEndian32;
     procedure TestReadLittleEndian64;
     procedure TestDecodeZigZag;
@@ -35,7 +45,9 @@ type
     procedure TestMemoryLeak;
     procedure TestReadTag;
     procedure TestReadString;
+    procedure TestReadStringError;
     procedure TestReadBytes;
+    procedure TestReadBytesErrors;
   end;
 
 implementation
@@ -157,6 +169,12 @@ begin
   end;
 end;
 
+procedure TestProtoBufRawIO.TestReadBytesErrors;
+begin
+  CheckException(InputErrorBytesNegativeSize, Exception, 'negative size must cause Exception in .readBytes');
+  CheckException(InputErrorBytesEOF, Exception, 'negative size must cause Exception in .readBytes');
+end;
+
 procedure TestProtoBufRawIO.TestReadLittleEndian32;
 type
   TLittleEndianCase = record
@@ -260,6 +278,12 @@ begin
   finally
     in_pb.Free;
   end;
+end;
+
+procedure TestProtoBufRawIO.TestReadStringError;
+begin
+  CheckException(InputErrorStringNegativeSize, Exception, 'String with negative size -255 must cause an exception');
+  CheckException(InputErrorStringEOF, Exception, 'negative size must cause Exception in .readString');
 end;
 
 procedure TestProtoBufRawIO.TestManuallyGeneratedMessageBuffer;
@@ -427,6 +451,105 @@ begin
   finally
     pbo.Free;
   end;
+end;
+
+procedure TestProtoBufRawIO.DoReadRawVarIntForError(ABytes: Pointer; ASize: Integer);
+var
+  pb: TProtoBufInput;
+begin
+  pb:= TProtoBufInput.Create(ABytes, ASize);
+  try
+    //we only call readRawVarint64 as this is what readRawVarint32 does anyway
+    pb.readRawVarint64;
+  finally
+    pb.Free;
+  end;
+end;
+
+procedure TestProtoBufRawIO.InputErrorBytesEOF;
+const
+  bytes: array[1..2] of Byte = ($02, $20);
+var
+  pb: TProtoBufInput;
+begin
+  pb:= TProtoBufInput.Create(@bytes[1], SizeOf(bytes));
+  try
+    pb.readBytes;
+  finally
+    pb.Free;
+  end;
+end;
+
+procedure TestProtoBufRawIO.InputErrorBytesNegativeSize;
+const
+  //negative size -255, bytes taken from TestVarInt
+  bytes: array[1..10] of Byte = ($81, $FE, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $01);
+var
+  pb: TProtoBufInput;
+begin
+  pb:= TProtoBufInput.Create(@bytes[1], SizeOf(bytes));
+  try
+    pb.readBytes;
+  finally
+    pb.Free;
+  end;
+end;
+
+procedure TestProtoBufRawIO.InputErrorStringEOF;
+const
+  bytes: array[1..2] of Byte = ($02, $20);
+var
+  pb: TProtoBufInput;
+begin
+  pb:= TProtoBufInput.Create(@bytes[1], SizeOf(bytes));
+  try
+    pb.readString;
+  finally
+    pb.Free;
+  end;
+end;
+
+procedure TestProtoBufRawIO.InputErrorStringNegativeSize;
+const
+  //negative size -255, bytes taken from TestVarInt
+  bytes: array[1..10] of Byte = ($81, $FE, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $01);
+var
+  pb: TProtoBufInput;
+begin
+  pb:= TProtoBufInput.Create(@bytes[1], SizeOf(bytes));
+  try
+    pb.readString;
+  finally
+    pb.Free;
+  end;
+end;
+
+procedure TestProtoBufRawIO.InputErrorVarInt32EOF;
+const
+  bytes: array[1..2] of Byte = ($FF, $FF);
+begin
+  DoReadRawVarIntForError(@bytes, SizeOf(bytes));
+end;
+
+procedure TestProtoBufRawIO.InputErrorVarInt32Unterminated;
+const
+  bytes: array[1..10] of Byte = ($FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF);
+begin
+  DoReadRawVarIntForError(@bytes, SizeOf(bytes) - 1);
+end;
+
+procedure TestProtoBufRawIO.InputErrorVarInt32ToLong;
+const
+  bytes: array[1..11] of Byte = ($FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF);
+begin
+  DoReadRawVarIntForError(@bytes, SizeOf(bytes));
+end;
+
+procedure TestProtoBufRawIO.TestVarintErrors;
+begin
+  CheckException(InputErrorVarInt32EOF, Exception, 'VarInt32 unexpected EOF after 2 bytes');
+  CheckException(InputErrorVarInt32Unterminated, Exception, 'VarInt32 with 10 bytes and last msb set');
+  CheckException(InputErrorVarInt32ToLong, Exception, 'VarInt32 which has more than 5 bytes must cause an exception');
 end;
 
 initialization
