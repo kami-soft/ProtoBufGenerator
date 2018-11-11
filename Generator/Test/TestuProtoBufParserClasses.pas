@@ -504,14 +504,17 @@ begin
   CheckEquals('flag1', FProtoBufEnum[0].Name);
   CheckEquals($1, FProtoBufEnum[0].Value);
   Check(FProtoBufEnum[0].IsHexValue);
+  CheckEquals('$00000001', FProtoBufEnum.GetEnumValueString(0));
 
   CheckEquals('flagMask', FProtoBufEnum[1].Name);
   CheckEquals($FFFF, FProtoBufEnum[1].Value);
   Check(FProtoBufEnum[1].IsHexValue);
+  CheckEquals('$0000FFFF', FProtoBufEnum.GetEnumValueString(1));
 
   CheckEquals('flag0C', FProtoBufEnum[2].Name);
   CheckEquals($C0000, FProtoBufEnum[2].Value);
   Check(FProtoBufEnum[2].IsHexValue);
+  CheckEquals('$000C0000', FProtoBufEnum.GetEnumValueString(2));
 end;
 
 procedure TestTProtoBufMessage.SetUp;

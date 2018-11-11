@@ -89,8 +89,11 @@ type
   TProtoBufEnum = class(TAbstractProtoBufParserContainer<TProtoBufEnumValue>)
   strict private
     FAllowAlias: Boolean;
+    FHexFormatString: string;
   public
     procedure ParseFromProto(const Proto: string; var iPos: integer); override;
+
+    function GetEnumValueString(AEnumIndex: Integer): string;
 
     property AllowAlias: Boolean read FAllowAlias;
   end;
@@ -149,6 +152,7 @@ function StrToPropertyType(const AStr: string): TScalarPropertyType;
 implementation
 
 uses
+  Math,
   System.SysUtils,
   System.StrUtils,
   System.IOUtils,
@@ -472,10 +476,20 @@ end;
 
 { TProtoBufEnum }
 
+function TProtoBufEnum.GetEnumValueString(AEnumIndex: Integer): string;
+var
+  item: TProtoBufEnumValue;
+begin
+  item:= Items[AEnumIndex];
+  if item.isHexValue then
+    Result:= Format(FHexFormatString, [item.Value]) else
+    Result:= IntToStr(item.Value);
+end;
+
 procedure TProtoBufEnum.ParseFromProto(const Proto: string; var iPos: integer);
 var
   Item: TProtoBufEnumValue;
-  lPos: Integer;
+  lPos, lMaxValue: Integer;
   sOptionPeek, sOptionValue: string;
 begin
   inherited;
@@ -484,6 +498,7 @@ begin
     Val2 = 2;
     } *)
 
+  lMaxValue:= 0;
   FName := ReadWordFromBuf(Proto, iPos, ['{']);
   SkipRequiredChar(Proto, iPos, '{');
   SkipAllComments(Proto, iPos);
@@ -507,6 +522,7 @@ begin
         try
           Item.ParseFromProto(Proto, iPos);
           Add(Item);
+          lMaxValue:= Max(lMaxValue, Item.Value);
           Item := nil;
           SkipAllComments(Proto, iPos);
         finally
@@ -515,6 +531,12 @@ begin
       end;
     end;
   SkipRequiredChar(Proto, iPos, '}');
+
+  if lMaxValue < 256 then
+    FHexFormatString:= '$%.2x' else
+    if lMaxValue < 65536 then
+      FHexFormatString:= '$%.4x' else
+      FHexFormatString:= '$%.8x';
 
   Sort(TComparer<TProtoBufEnumValue>.Construct(
     function(const Left, Right: TProtoBufEnumValue): integer
