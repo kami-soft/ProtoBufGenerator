@@ -81,6 +81,7 @@ type
     procedure TearDown; override;
   published
     procedure TestParseFromProto;
+    procedure TestEnumAliasOption;
   end;
   // Test methods for class TProtoBufOne
 
@@ -338,6 +339,17 @@ procedure TestTProtoBufEnum.TearDown;
 begin
   FProtoBufEnum.Free;
   FProtoBufEnum := nil;
+end;
+
+procedure TestTProtoBufEnum.TestEnumAliasOption;
+begin
+  CallParseFromProto('Enum1{'#13#10'  option allow_alias = true; '#13#10'  Val1 = 1 ;'#13#10'  Val2= 2 ;'#13#10'  }');
+  CheckEquals('Enum1', FProtoBufEnum.Name);
+  CheckEquals(2, FProtoBufEnum.Count);
+  CheckEquals('Val1', FProtoBufEnum[0].Name);
+  CheckEquals(1, FProtoBufEnum[0].Value);
+  CheckEquals('Val2', FProtoBufEnum[1].Name);
+  CheckEquals(2, FProtoBufEnum[1].Value);
 end;
 
 procedure TestTProtoBufEnum.TestParseFromProto;
