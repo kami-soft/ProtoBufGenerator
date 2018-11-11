@@ -1,4 +1,4 @@
-unit TestProtoBuf;
+unit TestuProtoBufRawIO;
 {
 
   Delphi DUnit Test Case
@@ -17,10 +17,10 @@ uses
   SysUtils;
 
 type
-  // Test methods for proto buf implementation
-  // moved from pbTest.dpr and UnitTest.pas
+  // Test methods for raw Input/Output methods
+  // in pbInput and pbOutput
 
-  TestProtoBufMethods = class(TTestCase)
+  TestProtoBufRawIO = class(TTestCase)
   strict private
   public
     procedure SetUp; override;
@@ -43,15 +43,15 @@ uses
   pbInput,
   pbOutput;
 
-procedure TestProtoBufMethods.SetUp;
+procedure TestProtoBufRawIO.SetUp;
 begin
 end;
 
-procedure TestProtoBufMethods.TearDown;
+procedure TestProtoBufRawIO.TearDown;
 begin
 end;
 
-procedure TestProtoBufMethods.TestDecodeZigZag;
+procedure TestProtoBufRawIO.TestDecodeZigZag;
 begin
   (* 32 *)
   CheckEquals(0, decodeZigZag32(0));
@@ -75,7 +75,7 @@ begin
   CheckEquals(Int64($8000000000000000), decodeZigZag64($FFFFFFFFFFFFFFFF));
 end;
 
-procedure TestProtoBufMethods.TestEncodeDecodeZigZag;
+procedure TestProtoBufRawIO.TestEncodeDecodeZigZag;
 var
   i: integer;
   j: integer;
@@ -108,7 +108,7 @@ begin
   CheckEquals(i64, decodeZigZag64(j64), 'ZigZag64 symmetry error');
 end;
 
-procedure TestProtoBufMethods.TestMemoryLeak;
+procedure TestProtoBufRawIO.TestMemoryLeak;
 const
   Mb = 1024 * 1024;
 var
@@ -126,7 +126,7 @@ begin
     end;
 end;
 
-procedure TestProtoBufMethods.TestReadLittleEndian32;
+procedure TestProtoBufRawIO.TestReadLittleEndian32;
 type
   TLittleEndianCase = record
     bytes: array [1 .. 4] of byte; // Encoded bytes.
@@ -160,7 +160,7 @@ begin
     end;
 end;
 
-procedure TestProtoBufMethods.TestReadLittleEndian64;
+procedure TestProtoBufRawIO.TestReadLittleEndian64;
 type
   TLittleEndianCase = record
     bytes: array [1 .. 8] of byte; // Encoded bytes.
@@ -194,7 +194,7 @@ begin
     end;
 end;
 
-procedure TestProtoBufMethods.TestReadString;
+procedure TestProtoBufRawIO.TestReadString;
 const
   TEST_string = 'Тестовая строка';
   TEST_integer = 12345678;
@@ -248,7 +248,7 @@ begin
   CheckTrue(abs(delta) < 0.000001);
 end;
 
-procedure TestProtoBufMethods.TestReadTag;
+procedure TestProtoBufRawIO.TestReadTag;
 var
   out_pb: TProtoBufOutput;
   in_pb: TProtoBufInput;
@@ -286,7 +286,7 @@ begin
   end;
 end;
 
-procedure TestProtoBufMethods.TestVarint;
+procedure TestProtoBufRawIO.TestVarint;
 type
   TVarintCase = record
     bytes: array [1 .. 10] of byte; // Encoded bytes.
@@ -339,8 +339,5 @@ begin
 end;
 
 initialization
-
-// Register any test cases with the test runner
-RegisterTest(TestProtoBufMethods.Suite);
-
+  RegisterTest(TestProtoBufRawIO.Suite);
 end.
