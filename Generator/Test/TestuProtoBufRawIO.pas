@@ -1,4 +1,4 @@
-unit TestuProtoBufRawIO;
+п»їunit TestuProtoBufRawIO;
 {
 
   Delphi DUnit Test Case
@@ -196,7 +196,7 @@ end;
 
 procedure TestProtoBufRawIO.TestManuallyGeneratedMessageBuffer;
 const
-  TEST_string = 'Тестовая строка';
+  TEST_string = 'РўРµСЃС‚РѕРІР°СЏ СЃС‚СЂРѕРєР°';
   TEST_integer = 12345678;
   TEST_single = 12345.123;
   TEST_double = 1234567890.123;
@@ -329,7 +329,7 @@ begin
       begin
         t:= VarintCases[i];
         pbo.Clear;
-        // создать тестовый буфер
+        // create test buffer
         SetLength(buf, t.Size);
         for j := 1 to t.Size do
           buf[j] := AnsiChar(t.bytes[j]);
