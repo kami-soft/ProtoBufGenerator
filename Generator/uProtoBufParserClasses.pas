@@ -78,10 +78,12 @@ type
   TProtoBufEnumValue = class(TAbstractProtoBufParserItem)
   strict private
     FValue: integer;
+    FIsHexValue: Boolean;
   public
     procedure ParseFromProto(const Proto: string; var iPos: integer); override;
 
     property Value: integer read FValue;
+    property IsHexValue: Boolean read FIsHexValue;
   end;
 
   TProtoBufEnum = class(TAbstractProtoBufParserContainer<TProtoBufEnumValue>)
@@ -453,6 +455,8 @@ end;
 { TProtoBufEnumValue }
 
 procedure TProtoBufEnumValue.ParseFromProto(const Proto: string; var iPos: integer);
+var
+  s: string;
 begin
   inherited;
   { Val1 = 1; }
@@ -460,7 +464,9 @@ begin
   if Length(FName) = 0 then
     raise EParserError.Create('Enumeration contains unnamed value');
   SkipRequiredChar(Proto, iPos, '=');
-  FValue := StrToInt(ReadWordFromBuf(Proto, iPos, [';']));
+  s:= ReadWordFromBuf(Proto, iPos, [';']);
+  FValue := StrToInt(s);
+  FIsHexValue:= Pos('0x', s) = 1;
   SkipRequiredChar(Proto, iPos, ';');
 end;
 
