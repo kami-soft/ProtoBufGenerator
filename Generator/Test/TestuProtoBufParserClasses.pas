@@ -680,14 +680,14 @@ begin
 end;
 
 initialization
-  RegisterTest(TestTProtoBufPropOption.Suite);
-  RegisterTest(TestTProtoBufPropOptions.Suite);
-  RegisterTest(TestTProtoBufProperty.Suite);
-  RegisterTest(TestTProtoBufOneOf.Suite);
-  RegisterTest(TestTProtoBufEnumValue.Suite);
-  RegisterTest(TestTProtoBufEnum.Suite);
-  RegisterTest(TestTProtoBufMessage.Suite);
-  RegisterTest(TestTProtoBufEnumList.Suite);
-  RegisterTest(TestTProtoBufMessageList.Suite);
-  RegisterTest(TestTProtoFile.Suite);
+  RegisterTest('Parser', TestTProtoBufPropOption.Suite);
+  RegisterTest('Parser', TestTProtoBufPropOptions.Suite);
+  RegisterTest('Parser', TestTProtoBufProperty.Suite);
+  RegisterTest('Parser', TestTProtoBufOneOf.Suite);
+  RegisterTest('Parser', TestTProtoBufEnumValue.Suite);
+  RegisterTest('Parser', TestTProtoBufEnum.Suite);
+  RegisterTest('Parser', TestTProtoBufMessage.Suite);
+  RegisterTest('Parser', TestTProtoBufEnumList.Suite);
+  RegisterTest('Parser', TestTProtoBufMessageList.Suite);
+  RegisterTest('Parser', TestTProtoFile.Suite);
 end.
