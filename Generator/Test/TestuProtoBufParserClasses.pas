@@ -28,7 +28,6 @@ type
 
     property LastiPos: Integer read FLastiPos;
   end;
-
   // Test methods for class TProtoBufPropOption
 
   TestTProtoBufPropOption = class(TTestCase)
@@ -74,11 +73,22 @@ type
   TestTProtoBufEnum = class(TTestCase)
   strict private
     FProtoBufEnum: TProtoBufEnum;
+    FLastiPos: Integer;
+
+    procedure ParserErrorOptionNameMissing;
+    procedure ParserErrorOptionEqualsMissing;
+    procedure ParserErrorOptionValueMissing;
+    procedure ParserErrorOptionTerminatorMissing;
+    procedure ParserErrorOptionUnknownOptionName;
+  private
+    procedure CallParseFromProto(const AProto: string);
   public
     procedure SetUp; override;
     procedure TearDown; override;
   published
     procedure TestParseFromProto;
+    procedure TestEnumAliasOption;
+    procedure TestEnumAliasOptionParserErrors;
   end;
   // Test methods for class TProtoBufOne
 
@@ -321,6 +331,37 @@ begin
   CheckEquals(1, FProtoBufEnumValue.Value);
 end;
 
+procedure TestTProtoBufEnum.CallParseFromProto(const AProto: string);
+begin
+  FLastiPos:= 1;
+  FProtoBufEnum.ParseFromProto(AProto, FLastiPos);
+end;
+
+procedure TestTProtoBufEnum.ParserErrorOptionEqualsMissing;
+begin
+  CallParseFromProto('Enum1{'#13#10'  option allow_alias; ');
+end;
+
+procedure TestTProtoBufEnum.ParserErrorOptionNameMissing;
+begin
+  CallParseFromProto('Enum1{'#13#10'  option; ');
+end;
+
+procedure TestTProtoBufEnum.ParserErrorOptionTerminatorMissing;
+begin
+  CallParseFromProto('Enum1{'#13#10'  option allow_alias = true '#13#10'  newvalue = 1');
+end;
+
+procedure TestTProtoBufEnum.ParserErrorOptionUnknownOptionName;
+begin
+  CallParseFromProto('Enum1{'#13#10'  option unknown = true;');
+end;
+
+procedure TestTProtoBufEnum.ParserErrorOptionValueMissing;
+begin
+  CallParseFromProto('Enum1{'#13#10'  option allow_alias = ;');
+end;
+
 procedure TestTProtoBufEnum.SetUp;
 begin
   FProtoBufEnum := TProtoBufEnum.Create(nil);
@@ -332,14 +373,39 @@ begin
   FProtoBufEnum := nil;
 end;
 
-procedure TestTProtoBufEnum.TestParseFromProto;
-var
-  Proto: string;
-  iPos: Integer;
+procedure TestTProtoBufEnum.TestEnumAliasOption;
 begin
-  Proto := 'Enum1{Val1=1;Val2=2;}';
-  iPos := 1;
-  FProtoBufEnum.ParseFromProto(Proto, iPos);
+  CallParseFromProto('Enum1{'#13#10'  option allow_alias = true; '#13#10'  Val1 = 1 ;'#13#10'  Val2= 2 ;'#13#10'  }');
+  CheckEquals('Enum1', FProtoBufEnum.Name);
+  Check(FProtoBufEnum.AllowAlias, 'AllowAlias not set');
+  CheckEquals(2, FProtoBufEnum.Count);
+  CheckEquals('Val1', FProtoBufEnum[0].Name);
+  CheckEquals(1, FProtoBufEnum[0].Value);
+  CheckEquals('Val2', FProtoBufEnum[1].Name);
+  CheckEquals(2, FProtoBufEnum[1].Value);
+
+  CallParseFromProto('Enum1{'#13#10'  option allow_alias = false; '#13#10'  Val1 = 1 ;'#13#10'  Val2= 2 ;'#13#10'  }');
+  CheckEquals('Enum1', FProtoBufEnum.Name);
+  Check(not FProtoBufEnum.AllowAlias, 'AllowAlias must be false');
+  CheckEquals(2, FProtoBufEnum.Count);
+  CheckEquals('Val1', FProtoBufEnum[0].Name);
+  CheckEquals(1, FProtoBufEnum[0].Value);
+  CheckEquals('Val2', FProtoBufEnum[1].Name);
+  CheckEquals(2, FProtoBufEnum[1].Value);
+end;
+
+procedure TestTProtoBufEnum.TestEnumAliasOptionParserErrors;
+begin
+  CheckException(ParserErrorOptionNameMissing, Exception, 'missing option name must cause exception');
+  CheckException(ParserErrorOptionEqualsMissing, Exception, 'missing equal sign for option must cause exception');
+  CheckException(ParserErrorOptionValueMissing, Exception, 'missing option value must cause exception');
+  CheckException(ParserErrorOptionTerminatorMissing, Exception, 'missing option terminator must cause exception');
+  CheckException(ParserErrorOptionUnknownOptionName, Exception, 'unsupported option name must cause exception');
+end;
+
+procedure TestTProtoBufEnum.TestParseFromProto;
+begin
+  CallParseFromProto('Enum1{Val1=1;Val2=2;}');
   CheckEquals('Enum1', FProtoBufEnum.Name);
   CheckEquals(2, FProtoBufEnum.Count);
   CheckEquals('Val1', FProtoBufEnum[0].Name);
@@ -347,9 +413,7 @@ begin
   CheckEquals('Val2', FProtoBufEnum[1].Name);
   CheckEquals(2, FProtoBufEnum[1].Value);
 
-  Proto := 'Enum1  {Val1=1;Val2=2;}';
-  iPos := 1;
-  FProtoBufEnum.ParseFromProto(Proto, iPos);
+  CallParseFromProto('Enum1  {Val1=1;Val2=2;}');
   CheckEquals('Enum1', FProtoBufEnum.Name);
   CheckEquals(2, FProtoBufEnum.Count);
   CheckEquals('Val1', FProtoBufEnum[0].Name);
@@ -357,9 +421,7 @@ begin
   CheckEquals('Val2', FProtoBufEnum[1].Name);
   CheckEquals(2, FProtoBufEnum[1].Value);
 
-  Proto := 'Enum1  {  Val1=1;Val2=2;}';
-  iPos := 1;
-  FProtoBufEnum.ParseFromProto(Proto, iPos);
+  CallParseFromProto('Enum1  {  Val1=1;Val2=2;}');
   CheckEquals('Enum1', FProtoBufEnum.Name);
   CheckEquals(2, FProtoBufEnum.Count);
   CheckEquals('Val1', FProtoBufEnum[0].Name);
@@ -367,9 +429,7 @@ begin
   CheckEquals('Val2', FProtoBufEnum[1].Name);
   CheckEquals(2, FProtoBufEnum[1].Value);
 
-  Proto := 'Enum1{Val1 = 1 ; Val2= 2 ;  }';
-  iPos := 1;
-  FProtoBufEnum.ParseFromProto(Proto, iPos);
+  CallParseFromProto('Enum1{Val1 = 1 ; Val2= 2 ;  }');
   CheckEquals('Enum1', FProtoBufEnum.Name);
   CheckEquals(2, FProtoBufEnum.Count);
   CheckEquals('Val1', FProtoBufEnum[0].Name);
@@ -377,9 +437,7 @@ begin
   CheckEquals('Val2', FProtoBufEnum[1].Name);
   CheckEquals(2, FProtoBufEnum[1].Value);
 
-  Proto := 'Enum1{'#13#10'  Val1 = 1 ;'#13#10'  Val2= 2 ;'#13#10'  }';
-  iPos := 1;
-  FProtoBufEnum.ParseFromProto(Proto, iPos);
+  CallParseFromProto('Enum1{'#13#10'  Val1 = 1 ;'#13#10'  Val2= 2 ;'#13#10'  }');
   CheckEquals('Enum1', FProtoBufEnum.Name);
   CheckEquals(2, FProtoBufEnum.Count);
   CheckEquals('Val1', FProtoBufEnum[0].Name);

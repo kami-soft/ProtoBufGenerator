@@ -85,8 +85,12 @@ type
   end;
 
   TProtoBufEnum = class(TAbstractProtoBufParserContainer<TProtoBufEnumValue>)
+  strict private
+    FAllowAlias: Boolean;
   public
     procedure ParseFromProto(const Proto: string; var iPos: integer); override;
+
+    property AllowAlias: Boolean read FAllowAlias;
   end;
 
   TProtoBufMessage = class(TAbstractProtoBufParserContainer<TProtoBufProperty>)
@@ -463,6 +467,8 @@ end;
 procedure TProtoBufEnum.ParseFromProto(const Proto: string; var iPos: integer);
 var
   Item: TProtoBufEnumValue;
+  lPos: Integer;
+  sOptionPeek, sOptionValue: string;
 begin
   inherited;
   (* Enum1 {
@@ -475,14 +481,29 @@ begin
   SkipAllComments(Proto, iPos);
   while Proto[iPos] <> '}' do
     begin
-      Item := TProtoBufEnumValue.Create(FRoot);
-      try
-        Item.ParseFromProto(Proto, iPos);
-        Add(Item);
-        Item := nil;
-        SkipAllComments(Proto, iPos);
-      finally
-        Item.Free;
+      lPos:= iPos;
+      sOptionPeek:= ReadWordFromBuf(Proto, lPos, [';']);
+      if SameText(sOptionPeek, 'option') then
+      begin
+        iPos:= lPos;
+        sOptionPeek:= ReadWordFromBuf(Proto, iPos, [';']);
+        SkipRequiredChar(Proto, iPos, '=');
+        sOptionValue:= ReadWordFromBuf(Proto, iPos, [';']);
+        if SameText(sOptionPeek, 'allow_alias') then
+          FAllowAlias:= SameText(sOptionValue, 'true') else
+          raise Exception.CreateFmt('Unknown option %s while parsing enum %s', [sOptionPeek, FName]);
+        SkipRequiredChar(Proto, iPos, ';');
+      end else
+      begin
+        Item := TProtoBufEnumValue.Create(FRoot);
+        try
+          Item.ParseFromProto(Proto, iPos);
+          Add(Item);
+          Item := nil;
+          SkipAllComments(Proto, iPos);
+        finally
+          Item.Free;
+        end;
       end;
     end;
   SkipRequiredChar(Proto, iPos, '}');
