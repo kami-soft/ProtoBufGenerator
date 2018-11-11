@@ -288,27 +288,36 @@ end;
 
 procedure TestProtoBufRawIO.TestVarint;
 type
+  TVarintCaseOptions = set of (vcoIs64, vcoSkipOutputCheck);
   TVarintCase = record
     bytes: array [1 .. 10] of byte; // Encoded bytes.
     Size: integer; // Encoded size, in bytes.
     value: Int64; // Parsed value.
-    is64: Boolean;
+    Options: TVarintCaseOptions;
   end;
 const
-  VarintCases: array [1 .. 11] of TVarintCase = (
+  VarintCases: array [1 .. 17] of TVarintCase = (
     // 32-bit values
-    (bytes: ($00, $00, $00, $00, $00, $00, $00, $00, $00, $00); Size: 1; value: 0; is64: False),
-    (bytes: ($01, $00, $00, $00, $00, $00, $00, $00, $00, $00); Size: 1; value: 1; is64: False),
-    (bytes: ($7F, $00, $00, $00, $00, $00, $00, $00, $00, $00); Size: 1; value: 127; is64: False),
-    (bytes: ($A2, $74, $00, $00, $00, $00, $00, $00, $00, $00); Size: 2; value: 14882; is64: False),
-    (bytes: ($FF, $FF, $FF, $FF, $0F, $00, $00, $00, $00, $00); Size: 5; value: -1; is64: False),
-    (bytes: ($81, $FE, $FF, $FF, $0F, $00, $00, $00, $00, $00); Size: 5; value: -255; is64: False),
-    (bytes: ($B7, $81, $FC, $FF, $0F, $00, $00, $00, $00, $00); Size: 5; value: -65353; is64: False),
-    (bytes: ($80, $80, $80, $80, $08, $00, $00, $00, $00, $00); Size: 5; value: -2147483648; is64: False),
+    (bytes: ($00, $00, $00, $00, $00, $00, $00, $00, $00, $00); Size: 1; value: 0; Options: []),
+    (bytes: ($01, $00, $00, $00, $00, $00, $00, $00, $00, $00); Size: 1; value: 1; Options: []),
+    (bytes: ($7F, $00, $00, $00, $00, $00, $00, $00, $00, $00); Size: 1; value: 127; Options: []),
+    (bytes: ($A2, $74, $00, $00, $00, $00, $00, $00, $00, $00); Size: 2; value: 14882; Options: []),
+    (bytes: ($FF, $FF, $FF, $FF, $07, $00, $00, $00, $00, $00); Size: 5; value: MaxLongInt; Options: []),
+    (bytes: ($FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $01); Size: 10; value: -1; Options: []),
+    (bytes: ($D5, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $01); Size: 10; value: -43; Options: []),
+    (bytes: ($81, $FE, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $01); Size: 10; value: -255; Options: []),
+    (bytes: ($B7, $81, $FC, $FF, $FF, $FF, $FF, $FF, $FF, $01); Size: 10; value: -65353; Options: []),
+    (bytes: ($80, $80, $80, $80, $F8, $FF, $FF, $FF, $FF, $01); Size: 10; value: -2147483648; Options: []),
+    // 32-bit values that are not padded to 64bit, make sure we can read them,
+    // but don't compare our output, as it will have lenth 10, since we pad correctly
+    (bytes: ($FF, $FF, $FF, $FF, $0F, $00, $00, $00, $00, $00); Size: 5; value: -1; Options: [vcoSkipOutputCheck]),
+    (bytes: ($81, $FE, $FF, $FF, $0F, $00, $00, $00, $00, $00); Size: 5; value: -255; Options: [vcoSkipOutputCheck]),
+    (bytes: ($B7, $81, $FC, $FF, $0F, $00, $00, $00, $00, $00); Size: 5; value: -65353; Options: [vcoSkipOutputCheck]),
+    (bytes: ($80, $80, $80, $80, $08, $00, $00, $00, $00, $00); Size: 5; value: -2147483648; Options: [vcoSkipOutputCheck]),
     // 64-bit
-    (bytes: ($BE, $F7, $92, $84, $0B, $00, $00, $00, $00, $00); Size: 5; value: 2961488830; is64: True),
-    (bytes: ($BE, $F7, $92, $84, $1B, $00, $00, $00, $00, $00); Size: 5; value: 7256456126; is64: True),
-    (bytes: ($80, $E6, $EB, $9C, $C3, $C9, $A4, $49, $00, $00); Size: 8; value: 41256202580718336; is64: True));
+    (bytes: ($BE, $F7, $92, $84, $0B, $00, $00, $00, $00, $00); Size: 5; value: 2961488830; Options: [vcoIs64]),
+    (bytes: ($BE, $F7, $92, $84, $1B, $00, $00, $00, $00, $00); Size: 5; value: 7256456126; Options: [vcoIs64]),
+    (bytes: ($80, $E6, $EB, $9C, $C3, $C9, $A4, $49, $00, $00); Size: 8; value: 41256202580718336; Options: [vcoIs64]));
 var
   i, j, k: integer;
   t: TVarintCase;
@@ -330,18 +339,19 @@ begin
           buf[j] := AnsiChar(t.bytes[j]);
         pbi := TProtoBufInput.Create(@buf[1], t.Size);
         try
-          if not t.is64 then
-            begin
-              int := pbi.readRawVarint32;
-              CheckEquals(t.value, int, Format('Test Varint32 %d fails', [i]));
-              pbo.writeRawVarint32(t.value);
-            end
-          else
-            begin
-              i64 := pbi.readRawVarint64;
-              CheckEquals(t.value, i64, Format('Test Varint64 %d fails', [i]));
-              pbo.writeRawVarint64(i64);
-            end;
+          if vcoIs64 in t.Options then
+          begin
+            i64 := pbi.readRawVarint64;
+            CheckEquals(t.value, i64, Format('Test Varint64 %d fails', [i]));
+            pbo.writeRawVarint64(i64);
+          end else
+          begin
+            int := pbi.readRawVarint32;
+            CheckEquals(t.value, int, Format('Test Varint32 %d fails', [i]));
+            pbo.writeRawVarint32(t.value);
+          end;
+          if vcoSkipOutputCheck in t.Options then
+            Continue;
           output:= pbo.GetText;
           CheckEquals(t.Size, Length(output), Format('Output for Test %d is not as long/short as expected', [i]));
           for k:= 1 to t.Size do
