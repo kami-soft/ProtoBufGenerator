@@ -292,50 +292,67 @@ type
     bytes: array [1 .. 10] of byte; // Encoded bytes.
     Size: integer; // Encoded size, in bytes.
     value: Int64; // Parsed value.
+    is64: Boolean;
   end;
 const
-  VarintCases: array [0 .. 7] of TVarintCase = (
+  VarintCases: array [1 .. 11] of TVarintCase = (
     // 32-bit values
-    (bytes: ($00, $00, $00, $00, $00, $00, $00, $00, $00, $00); Size: 1; value: 0),
-    (bytes: ($01, $00, $00, $00, $00, $00, $00, $00, $00, $00); Size: 1; value: 1),
-    (bytes: ($7F, $00, $00, $00, $00, $00, $00, $00, $00, $00); Size: 1; value: 127),
-    (bytes: ($A2, $74, $00, $00, $00, $00, $00, $00, $00, $00); Size: 2; value: 14882),
-    (bytes: ($FF, $FF, $FF, $FF, $0F, $00, $00, $00, $00, $00); Size: 5; value: - 1),
+    (bytes: ($00, $00, $00, $00, $00, $00, $00, $00, $00, $00); Size: 1; value: 0; is64: False),
+    (bytes: ($01, $00, $00, $00, $00, $00, $00, $00, $00, $00); Size: 1; value: 1; is64: False),
+    (bytes: ($7F, $00, $00, $00, $00, $00, $00, $00, $00, $00); Size: 1; value: 127; is64: False),
+    (bytes: ($A2, $74, $00, $00, $00, $00, $00, $00, $00, $00); Size: 2; value: 14882; is64: False),
+    (bytes: ($FF, $FF, $FF, $FF, $0F, $00, $00, $00, $00, $00); Size: 5; value: -1; is64: False),
+    (bytes: ($81, $FE, $FF, $FF, $0F, $00, $00, $00, $00, $00); Size: 5; value: -255; is64: False),
+    (bytes: ($B7, $81, $FC, $FF, $0F, $00, $00, $00, $00, $00); Size: 5; value: -65353; is64: False),
+    (bytes: ($80, $80, $80, $80, $08, $00, $00, $00, $00, $00); Size: 5; value: -2147483648; is64: False),
     // 64-bit
-    (bytes: ($BE, $F7, $92, $84, $0B, $00, $00, $00, $00, $00); Size: 5; value: 2961488830),
-    (bytes: ($BE, $F7, $92, $84, $1B, $00, $00, $00, $00, $00); Size: 5; value: 7256456126),
-    (bytes: ($80, $E6, $EB, $9C, $C3, $C9, $A4, $49, $00, $00); Size: 8; value: 41256202580718336));
+    (bytes: ($BE, $F7, $92, $84, $0B, $00, $00, $00, $00, $00); Size: 5; value: 2961488830; is64: True),
+    (bytes: ($BE, $F7, $92, $84, $1B, $00, $00, $00, $00, $00); Size: 5; value: 7256456126; is64: True),
+    (bytes: ($80, $E6, $EB, $9C, $C3, $C9, $A4, $49, $00, $00); Size: 8; value: 41256202580718336; is64: True));
 var
-  i, j: integer;
+  i, j, k: integer;
   t: TVarintCase;
-  pb: TProtoBufInput;
-  buf: AnsiString;
+  pbi: TProtoBufInput;
+  pbo: TProtoBufOutput;
+  buf, output: AnsiString;
   i64: Int64;
   int: integer;
 begin
-  for i := 0 to 7 do
-    begin
-      t := VarintCases[i];
-      // создать тестовый буфер
-      SetLength(buf, t.Size);
-      for j := 1 to t.Size do
-        buf[j] := AnsiChar(t.bytes[j]);
-      pb := TProtoBufInput.Create(@buf[1], t.Size);
-      try
-        if i < 5 then
-          begin
-            int := pb.readRawVarint32;
-            CheckEquals(t.value, int, 'Test Varint fails');
-          end
-        else
-          begin
-            i64 := pb.readRawVarint64;
-            CheckEquals(t.value, i64, 'Test Varint fails');
-          end;
-      finally
-        pb.Free;
+  pbo:= TProtoBufOutput.Create;
+  try
+    for i := Low(VarIntCases) to High(VarIntCases) do
+      begin
+        t:= VarintCases[i];
+        pbo.Clear;
+        // создать тестовый буфер
+        SetLength(buf, t.Size);
+        for j := 1 to t.Size do
+          buf[j] := AnsiChar(t.bytes[j]);
+        pbi := TProtoBufInput.Create(@buf[1], t.Size);
+        try
+          if not t.is64 then
+            begin
+              int := pbi.readRawVarint32;
+              CheckEquals(t.value, int, Format('Test Varint32 %d fails', [i]));
+              pbo.writeRawVarint32(t.value);
+            end
+          else
+            begin
+              i64 := pbi.readRawVarint64;
+              CheckEquals(t.value, i64, Format('Test Varint64 %d fails', [i]));
+              pbo.writeRawVarint64(i64);
+            end;
+          output:= pbo.GetText;
+          CheckEquals(t.Size, Length(output), Format('Output for Test %d is not as long/short as expected', [i]));
+          for k:= 1 to t.Size do
+            CheckEquals(t.bytes[k], Byte(output[k]), Format('Output for Test %d differs from input at index %d', [i, k]));
+        finally
+          pbi.Free;
+        end;
       end;
-    end;
+  finally
+    pbo.Free;
+  end;
 end;
 
 initialization
