@@ -31,7 +31,7 @@ type
     procedure TestReadLittleEndian64;
     procedure TestDecodeZigZag;
     procedure TestEncodeDecodeZigZag;
-    procedure TestReadString;
+    procedure TestManuallyGeneratedMessageBuffer;
     procedure TestMemoryLeak;
     procedure TestReadTag;
   end;
@@ -194,7 +194,7 @@ begin
     end;
 end;
 
-procedure TestProtoBufRawIO.TestReadString;
+procedure TestProtoBufRawIO.TestManuallyGeneratedMessageBuffer;
 const
   TEST_string = 'Тестовая строка';
   TEST_integer = 12345678;
@@ -208,7 +208,6 @@ var
   int: integer;
   dbl: double;
   flt: single;
-  delta: extended;
 begin
   out_pb := TProtoBufOutput.Create;
   out_pb.writeString(1, TEST_string);
@@ -236,16 +235,13 @@ begin
   t := in_pb.readTag;
   CheckEquals(tag, t);
   flt := in_pb.readFloat;
-  delta := TEST_single - flt;
-  CheckTrue(abs(delta) < 0.001);
+  CheckEquals(TEST_single, flt, 0.001);
   // TEST_double
   tag := makeTag(4, WIRETYPE_FIXED64);
   t := in_pb.readTag;
   CheckEquals(tag, t);
   dbl := in_pb.readDouble;
-  {$OVERFLOWCHECKS ON}
-  delta := dbl - TEST_double;
-  CheckTrue(abs(delta) < 0.000001);
+  CheckEquals(TEST_double, dbl, 0.000001);
 end;
 
 procedure TestProtoBufRawIO.TestReadTag;
