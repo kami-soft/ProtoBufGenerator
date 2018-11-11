@@ -35,6 +35,7 @@ type
     procedure TestMemoryLeak;
     procedure TestReadTag;
     procedure TestReadString;
+    procedure TestReadBytes;
   end;
 
 implementation
@@ -125,6 +126,35 @@ begin
       in_pb := TProtoBufInput.Create(PAnsiChar(s), Length(s), false);
       in_pb.Free;
     end;
+end;
+
+procedure TestProtoBufRawIO.TestReadBytes;
+var
+  Bytes, BytesRead: TBytes;
+  out_pb: TProtoBufOutput;
+  outputString: AnsiString;
+  in_pb: TProtoBufInput;
+begin
+  Bytes:= TBytes.Create($04, $20, $00, $FF, $C0);
+
+  out_pb:= TProtoBufOutput.Create;
+  try
+    out_pb.writeBytes(1, Bytes);
+
+    outputString:= out_pb.GetText;
+  finally
+    out_pb.Free;
+  end;
+
+  in_pb:= TProtoBufInput.Create(@outputString[1], Length(outputString), True);
+  try
+    in_pb.readTag;
+    BytesRead:= in_pb.readBytes;
+    CheckEquals(Length(Bytes), Length(BytesRead), 'Bytes length mismatch');
+    Check(CompareMem(@Bytes[0], @BytesRead[0], Length(BytesRead)));
+  finally
+    in_pb.Free;
+  end;
 end;
 
 procedure TestProtoBufRawIO.TestReadLittleEndian32;
