@@ -28,7 +28,6 @@ type
 
     property LastiPos: Integer read FLastiPos;
   end;
-
   // Test methods for class TProtoBufPropOption
 
   TestTProtoBufPropOption = class(TTestCase)
@@ -74,6 +73,9 @@ type
   TestTProtoBufEnum = class(TTestCase)
   strict private
     FProtoBufEnum: TProtoBufEnum;
+    FLastiPos: Integer;
+  private
+    procedure CallParseFromProto(const AProto: string);
   public
     procedure SetUp; override;
     procedure TearDown; override;
@@ -321,6 +323,12 @@ begin
   CheckEquals(1, FProtoBufEnumValue.Value);
 end;
 
+procedure TestTProtoBufEnum.CallParseFromProto(const AProto: string);
+begin
+  FLastiPos:= 1;
+  FProtoBufEnum.ParseFromProto(AProto, FLastiPos);
+end;
+
 procedure TestTProtoBufEnum.SetUp;
 begin
   FProtoBufEnum := TProtoBufEnum.Create(nil);
@@ -333,13 +341,8 @@ begin
 end;
 
 procedure TestTProtoBufEnum.TestParseFromProto;
-var
-  Proto: string;
-  iPos: Integer;
 begin
-  Proto := 'Enum1{Val1=1;Val2=2;}';
-  iPos := 1;
-  FProtoBufEnum.ParseFromProto(Proto, iPos);
+  CallParseFromProto('Enum1{Val1=1;Val2=2;}');
   CheckEquals('Enum1', FProtoBufEnum.Name);
   CheckEquals(2, FProtoBufEnum.Count);
   CheckEquals('Val1', FProtoBufEnum[0].Name);
@@ -347,9 +350,7 @@ begin
   CheckEquals('Val2', FProtoBufEnum[1].Name);
   CheckEquals(2, FProtoBufEnum[1].Value);
 
-  Proto := 'Enum1  {Val1=1;Val2=2;}';
-  iPos := 1;
-  FProtoBufEnum.ParseFromProto(Proto, iPos);
+  CallParseFromProto('Enum1  {Val1=1;Val2=2;}');
   CheckEquals('Enum1', FProtoBufEnum.Name);
   CheckEquals(2, FProtoBufEnum.Count);
   CheckEquals('Val1', FProtoBufEnum[0].Name);
@@ -357,9 +358,7 @@ begin
   CheckEquals('Val2', FProtoBufEnum[1].Name);
   CheckEquals(2, FProtoBufEnum[1].Value);
 
-  Proto := 'Enum1  {  Val1=1;Val2=2;}';
-  iPos := 1;
-  FProtoBufEnum.ParseFromProto(Proto, iPos);
+  CallParseFromProto('Enum1  {  Val1=1;Val2=2;}');
   CheckEquals('Enum1', FProtoBufEnum.Name);
   CheckEquals(2, FProtoBufEnum.Count);
   CheckEquals('Val1', FProtoBufEnum[0].Name);
@@ -367,9 +366,7 @@ begin
   CheckEquals('Val2', FProtoBufEnum[1].Name);
   CheckEquals(2, FProtoBufEnum[1].Value);
 
-  Proto := 'Enum1{Val1 = 1 ; Val2= 2 ;  }';
-  iPos := 1;
-  FProtoBufEnum.ParseFromProto(Proto, iPos);
+  CallParseFromProto('Enum1{Val1 = 1 ; Val2= 2 ;  }');
   CheckEquals('Enum1', FProtoBufEnum.Name);
   CheckEquals(2, FProtoBufEnum.Count);
   CheckEquals('Val1', FProtoBufEnum[0].Name);
@@ -377,9 +374,7 @@ begin
   CheckEquals('Val2', FProtoBufEnum[1].Name);
   CheckEquals(2, FProtoBufEnum[1].Value);
 
-  Proto := 'Enum1{'#13#10'  Val1 = 1 ;'#13#10'  Val2= 2 ;'#13#10'  }';
-  iPos := 1;
-  FProtoBufEnum.ParseFromProto(Proto, iPos);
+  CallParseFromProto('Enum1{'#13#10'  Val1 = 1 ;'#13#10'  Val2= 2 ;'#13#10'  }');
   CheckEquals('Enum1', FProtoBufEnum.Name);
   CheckEquals(2, FProtoBufEnum.Count);
   CheckEquals('Val1', FProtoBufEnum[0].Name);
