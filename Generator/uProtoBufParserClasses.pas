@@ -457,6 +457,8 @@ begin
   inherited;
   { Val1 = 1; }
   FName := ReadWordFromBuf(Proto, iPos, ['=']);
+  if Length(FName) = 0 then
+    raise EParserError.Create('Enumeration contains unnamed value');
   SkipRequiredChar(Proto, iPos, '=');
   FValue := StrToInt(ReadWordFromBuf(Proto, iPos, [';']));
   SkipRequiredChar(Proto, iPos, ';');
