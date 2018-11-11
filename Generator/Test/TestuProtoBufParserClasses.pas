@@ -97,6 +97,7 @@ type
     procedure TestParseFromProto;
     procedure TestEnumAliasOption;
     procedure TestEnumAliasOptionParserErrors;
+    procedure TestParseWithHexadecimals;
   end;
   // Test methods for class TProtoBufOne
 
@@ -492,6 +493,25 @@ begin
   CheckEquals(1, FProtoBufEnum[0].Value);
   CheckEquals('Val2', FProtoBufEnum[1].Name);
   CheckEquals(2, FProtoBufEnum[1].Value);
+end;
+
+procedure TestTProtoBufEnum.TestParseWithHexadecimals;
+begin
+  CallParseFromProto('EnumFlags{'#13#10'  flag1 = 0x01; '#13#10'  flagMask= 0xFFFF ;'#13#10'  flag0C = 0xC0000 ;'#13#10'  }');
+  CheckEquals('EnumFlags', FProtoBufEnum.Name);
+  CheckEquals(3, FProtoBufEnum.Count);
+
+  CheckEquals('flag1', FProtoBufEnum[0].Name);
+  CheckEquals($1, FProtoBufEnum[0].Value);
+  Check(FProtoBufEnum[0].IsHexValue);
+
+  CheckEquals('flagMask', FProtoBufEnum[1].Name);
+  CheckEquals($FFFF, FProtoBufEnum[1].Value);
+  Check(FProtoBufEnum[1].IsHexValue);
+
+  CheckEquals('flag0C', FProtoBufEnum[2].Name);
+  CheckEquals($C0000, FProtoBufEnum[2].Value);
+  Check(FProtoBufEnum[2].IsHexValue);
 end;
 
 procedure TestTProtoBufMessage.SetUp;
