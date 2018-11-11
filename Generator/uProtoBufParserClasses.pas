@@ -493,7 +493,7 @@ begin
         sOptionValue:= ReadWordFromBuf(Proto, iPos, [';']);
         if SameText(sOptionPeek, 'allow_alias') then
           FAllowAlias:= SameText(sOptionValue, 'true') else
-          raise Exception.CreateFmt('Unknown option %s while parsing enum %s', [sOptionPeek, FName]);
+          raise EParserError.CreateFmt('Unknown option %s while parsing enum %s', [sOptionPeek, FName]);
         SkipRequiredChar(Proto, iPos, ';');
       end else
       begin
@@ -587,7 +587,7 @@ begin
         if Item.PropKind = ptOneOf then
         begin
           if OneOfPropertyParent <> nil then
-            raise Exception.CreateFmt('Unsupported nested oneof property %s within %s', [Item.FName, OneOfPropertyParent.Name]);
+            raise EParserError.CreateFmt('Unsupported nested oneof property %s within %s', [Item.FName, OneOfPropertyParent.Name]);
           OneOfPropertyParent:= Item;
         end;
         Item := nil;

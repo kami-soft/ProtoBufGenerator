@@ -67,6 +67,7 @@ type
     procedure ParserErrorEnumValueEqualsMissing;
     procedure ParserErrorEnumValueValueMissing;
     procedure ParserErrorEnumValueTerminatorMissing;
+    procedure ParserErrorEnumValueStrToIntFailure;
   public
     procedure SetUp; override;
     procedure TearDown; override;
@@ -306,6 +307,11 @@ begin
   CallParseFromProto('= 1;', FProtoBufEnumValue);
 end;
 
+procedure TestTProtoBufEnumValue.ParserErrorEnumValueStrToIntFailure;
+begin
+  CallParseFromProto('Enum1= ThisIsNoInteger', FProtoBufEnumValue);
+end;
+
 procedure TestTProtoBufEnumValue.ParserErrorEnumValueTerminatorMissing;
 begin
   CallParseFromProto('Enum1= 1', FProtoBufEnumValue);
@@ -352,6 +358,7 @@ begin
   CheckException(ParserErrorEnumValueEqualsMissing, Exception, 'missing equal sign for enum value must cause exception');
   CheckException(ParserErrorEnumValueValueMissing, Exception, 'missing enum value must cause exception');
   CheckException(ParserErrorEnumValueTerminatorMissing, Exception, 'missing enum value terminator must cause exception');
+  CheckException(ParserErrorEnumValueStrToIntFailure, Exception, 'incorrect string enum value must cause exception');
 end;
 
 procedure TestTProtoBufEnum.CallParseFromProto(const AProto: string);
