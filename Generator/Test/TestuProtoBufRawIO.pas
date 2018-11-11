@@ -34,6 +34,7 @@ type
     procedure TestManuallyGeneratedMessageBuffer;
     procedure TestMemoryLeak;
     procedure TestReadTag;
+    procedure TestReadString;
   end;
 
 implementation
@@ -192,6 +193,43 @@ begin
         pb.Free;
       end;
     end;
+end;
+
+procedure TestProtoBufRawIO.TestReadString;
+const
+  TestStrings: array[1..5] of string = (
+    'Тестовая строка',
+    'Überläuferspaß',
+    '测试消息',
+    'ItMightNotGetLoudButRatherLongerThanExpectedUsingCamelCase',
+    'MultilineString'#13#10'Even with unix style line ending '#10'We''ll see: ©µ@'
+    );
+var
+  out_pb: TProtoBufOutput;
+  outputString: AnsiString;
+  in_pb: TProtoBufInput;
+  i: Integer;
+begin
+  out_pb:= TProtoBufOutput.Create;
+  try
+    for i:= Low(TestStrings) to High(TestStrings) do
+      out_pb.writeString(i, TestStrings[i]);
+
+    outputString:= out_pb.GetText;
+  finally
+    out_pb.Free;
+  end;
+
+  in_pb:= TProtoBufInput.Create(@outputString[1], Length(outputString), True);
+  try
+    for i:= Low(TestStrings) to High(TestStrings) do
+    begin
+      CheckEquals(makeTag(i, WIRETYPE_LENGTH_DELIMITED), in_pb.readTag, 'Unexpected tag');
+      CheckEquals(TestStrings[i], in_pb.readString);
+    end;
+  finally
+    in_pb.Free;
+  end;
 end;
 
 procedure TestProtoBufRawIO.TestManuallyGeneratedMessageBuffer;
