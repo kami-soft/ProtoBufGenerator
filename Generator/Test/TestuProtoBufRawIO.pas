@@ -48,7 +48,8 @@ type
     procedure TestReadStringError;
     procedure TestReadBytes;
     procedure TestReadBytesErrors;
-    procedure TestReusingInputBuf;
+    procedure TestReusingInputBufStream;
+    procedure TestReusingInputBufBuffer;
   end;
 
 implementation
@@ -375,7 +376,36 @@ begin
   end;
 end;
 
-procedure TestProtoBufRawIO.TestReusingInputBuf;
+procedure TestProtoBufRawIO.TestReusingInputBufBuffer;
+var
+  out_pb: TProtoBufOutput;
+  in_pb: TProtoBufInput;
+  outputString: AnsiString;
+  i: Integer;
+begin
+  out_pb:= TProtoBufOutput.Create;
+  try
+    out_pb.writeString(1, 'TestString');
+
+    outputString:= out_pb.GetText;
+  finally
+    out_pb.Free;
+  end;
+
+  in_pb:= TProtoBufInput.Create;
+  try
+    for i:= 1 to 2 do
+    begin
+      in_pb.LoadFromBuf(@outputString[1], Length(outputString));
+      in_pb.readTag; //value of no interest here
+      CheckEquals('TestString', in_pb.readString, Format('string mismatch, trial %d', [i]));
+    end;
+  finally
+    in_pb.Free;
+  end;
+end;
+
+procedure TestProtoBufRawIO.TestReusingInputBufStream;
 var
   out_pb: TProtoBufOutput;
   in_pb: TProtoBufInput;
