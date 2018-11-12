@@ -452,6 +452,7 @@ begin
 
   FOwnObject := true;
   FLen := Stream.size;
+  FPos := 0;
   FBuffer := AllocMem(FLen);
   Stream.Position := 0;
   Stream.Read(FBuffer^, FLen);
