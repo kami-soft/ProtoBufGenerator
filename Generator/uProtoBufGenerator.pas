@@ -326,7 +326,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
 
   procedure WriteLoadProc(ProtoMsg: TProtoBufMessage; SL: TStrings);
   var
-    i, iInsertVarBlock, iBeginBlock: Integer;
+    i, iInsertVarBlock, iInserttmpBufCreation, iBeginBlock: Integer;
     Prop: TProtoBufProperty;
     DelphiProp, OneOfDelphiProp: TDelphiProperty;
     bNeedtmpBuf: Boolean;
@@ -343,9 +343,10 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
         Exit;
       end;
     SL.Add('  if Result then');
-    SL.Add('    exit;');
+    SL.Add('    Exit;');
     SL.Add('  Result := True;');
-    SL.Add('  case fieldNumber of');
+    iInserttmpBufCreation:= SL.Count;
+    SL.Add('  case FieldNumber of');
     for i := 0 to ProtoMsg.Count - 1 do
       begin
         Prop := ProtoMsg[i];
@@ -367,11 +368,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
                 begin
                   bNeedtmpBuf:= True;
                   SL.Add(Format('%stmpBuf := ProtoBuf.ReadSubProtoBufInput;', [sIndent]));
-                  SL.Add(Format('%stry', [sIndent]));
-                  SL.Add(Format('%s  F%s.LoadFromBuf(tmpBuf);', [sIndent, DelphiProp.PropertyName]));
-                  SL.Add(Format('%sfinally', [sIndent]));
-                  SL.Add(Format('%s  tmpBuf.Free;', [sIndent]));
-                  SL.Add(Format('%send;', [sIndent]));
+                  SL.Add(Format('%sF%s.LoadFromBuf(tmpBuf);', [sIndent, DelphiProp.PropertyName]));
                 end;
           end
         else
@@ -384,14 +381,10 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
                     SL.Add(Format('%sif WireType = WIRETYPE_LENGTH_DELIMITED then', [sIndent]));
                     SL.Add(Format('%sbegin', [sIndent]));
                     SL.Add(Format('%s  tmpBuf:=ProtoBuf.ReadSubProtoBufInput;', [sIndent]));
-                    SL.Add(Format('%s  try', [sIndent]));
-                    SL.Add(Format('%s    while tmpBuf.getPos < tmpBuf.BufSize do', [sIndent]));
-                    SL.Add(Format('%s      F%s.Add(tmpBuf.read%s);', [sIndent, DelphiProp.PropertyName, GetProtoBufMethodForScalarType(Prop)]));
-                    SL.Add(Format('%s  finally', [sIndent]));
-                    SL.Add(Format('%s    tmpBuf.Free;', [sIndent]));
-                    SL.Add(Format('%s  end;', [sIndent]));
+                    SL.Add(Format('%s  while tmpBuf.getPos < tmpBuf.BufSize do', [sIndent]));
+                    SL.Add(Format('%s    F%s.Add(tmpBuf.read%s);', [sIndent, DelphiProp.PropertyName, GetProtoBufMethodForScalarType(Prop)]));
                     SL.Add(Format('%send else', [sIndent]));
-                    SL.Add(Format('%sF%s.Add(ProtoBuf.read%s);', [sIndent, DelphiProp.PropertyName, GetProtoBufMethodForScalarType(Prop)]));
+                    SL.Add(Format('%s  F%s.Add(ProtoBuf.read%s);', [sIndent, DelphiProp.PropertyName, GetProtoBufMethodForScalarType(Prop)]));
                   end
                 else
                   SL.Add(Format('%sF%s.Add(ProtoBuf.read%s);', [sIndent, DelphiProp.PropertyName, GetProtoBufMethodForScalarType(Prop)]));
@@ -405,14 +398,10 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
                       SL.Add(Format('%sif WireType = WIRETYPE_LENGTH_DELIMITED then', [sIndent]));
                       SL.Add(Format('%sbegin', [sIndent]));
                       SL.Add(Format('%s  tmpBuf:=ProtoBuf.ReadSubProtoBufInput;', [sIndent]));
-                      SL.Add(Format('%s  try', [sIndent]));
                       SL.Add(Format('%s  while tmpBuf.getPos<tmpBuf.BufSize do', [sIndent]));
                       SL.Add(Format('%s    F%s.Add(T%s(tmpBuf.readEnum));', [sIndent, DelphiProp.PropertyName, Prop.PropType]));
-                      SL.Add(Format('%s  finally', [sIndent]));
-                      SL.Add(Format('%s    tmpBuf.Free;', [sIndent]));
-                      SL.Add(Format('%s  end;', [sIndent]));
                       SL.Add(Format('%send else', [sIndent]));
-                      SL.Add(Format('%sF%s.Add(T%s(ProtoBuf.readEnum));', [sIndent, DelphiProp.PropertyName, Prop.PropType]));
+                      SL.Add(Format('%s  F%s.Add(T%s(ProtoBuf.readEnum));', [sIndent, DelphiProp.PropertyName, Prop.PropType]));
                     end
                   else
                     SL.Add(Format('%sF%s.Add(T%s(ProtoBuf.readEnum));', [sIndent, DelphiProp.PropertyName, Prop.PropType]));
@@ -437,13 +426,22 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
     SL.Add('  else');
     SL.Add('    Result := False;');
     SL.Add('  end;');
-    SL.Add('end;');
-    SL.Add('');
     if bNeedtmpBuf then
       begin
         SL.Insert(iInsertVarBlock, '  tmpBuf: TProtoBufInput;');
         SL.Insert(iInsertVarBlock, 'var');
+
+        Inc(iInserttmpBufCreation, 2); //we just added two lines for the declaration
+        SL.Insert(iInserttmpBufCreation, '  try');
+        SL.Insert(iInserttmpBufCreation, '  tmpBuf:= nil;');
+        for i:= iInserttmpBufCreation + 2 to SL.Count - 1 do
+          SL[i]:= '  ' + SL[i];
+        SL.Add('  finally');
+        SL.Add('    tmpBuf.Free');
+        SL.Add('  end;');
       end;
+    SL.Add('end;');
+    SL.Add('');
   end;
 
   procedure WriteSaveProc(ProtoMsg: TProtoBufMessage; SL: TStrings);
