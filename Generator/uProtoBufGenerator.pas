@@ -446,7 +446,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
 
   procedure WriteSaveProc(ProtoMsg: TProtoBufMessage; SL: TStrings);
   var
-    i, iInsertVarBlock: Integer;
+    i, iInsertVarBlock, iInserttmpBufCreation: Integer;
     Prop: TProtoBufProperty;
     DelphiProp: TDelphiProperty;
     bNeedtmpBuf, bNeedCounterVar: Boolean;
@@ -457,6 +457,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
     iInsertVarBlock:= sl.Count;
     SL.Add('begin');
     SL.Add('  inherited;');
+    iInserttmpBufCreation:= SL.Count;
     for i := 0 to ProtoMsg.Count - 1 do
       begin
         Prop := ProtoMsg[i];
@@ -476,15 +477,10 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
               else
                 begin
                   bNeedtmpBuf:= True;
-                  SL.Add('  begin');
-                  SL.Add('    tmpBuf:=TProtoBufOutput.Create;');
-                  SL.Add('    try');
-                  SL.Add(Format('      F%s.SaveToBuf(tmpBuf);', [DelphiProp.PropertyName]));
-                  SL.Add(Format('      ProtoBuf.writeMessage(%s, tmpBuf);', [DelphiProp.tagName]));
-                  SL.Add('    finally');
-                  SL.Add('      tmpBuf.Free;');
-                  SL.Add('    end;');
-                  SL.Add('  end;');
+                  SL.Add(       '  begin');
+                  SL.Add(Format('    F%s.SaveToBuf(tmpBuf);', [DelphiProp.PropertyName]));
+                  SL.Add(Format('    ProtoBuf.writeMessage(%s, tmpBuf);', [DelphiProp.tagName]));
+                  SL.Add(       '  end;');
                 end;
           end
         else
@@ -495,16 +491,11 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
                   begin
                     bNeedtmpBuf:= True;
                     bNeedCounterVar:= True;
-                    SL.Add('  begin');
-                    SL.Add('    tmpBuf:=TProtoBufOutput.Create;');
-                    SL.Add('    try');
-                    SL.Add(Format('      for i := 0 to F%s.Count-1 do', [DelphiProp.PropertyName]));
-                    SL.Add(Format('        tmpBuf.write%s(F%s[i]);', [GetProtoBufMethodForScalarType(Prop), DelphiProp.PropertyName]));
-                    SL.Add(Format('      ProtoBuf.writeMessage(%s, tmpBuf);', [DelphiProp.tagName]));
-                    SL.Add('    finally');
-                    SL.Add('      tmpBuf.Free;');
-                    SL.Add('    end;');
-                    SL.Add('  end;');
+                    SL.Add(       '  begin');
+                    SL.Add(Format('    for i := 0 to F%s.Count-1 do', [DelphiProp.PropertyName]));
+                    SL.Add(Format('      tmpBuf.write%s(F%s[i]);', [GetProtoBufMethodForScalarType(Prop), DelphiProp.PropertyName]));
+                    SL.Add(Format('    ProtoBuf.writeMessage(%s, tmpBuf);', [DelphiProp.tagName]));
+                    SL.Add(       '  end;');
                   end
                 else
                   begin
@@ -520,16 +511,11 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
                     begin
                       bNeedtmpBuf:= True;
                       bNeedCounterVar:= True;
-                      SL.Add('  begin');
-                      SL.Add('    tmpBuf:=TProtoBufOutput.Create;');
-                      SL.Add('    try');
-                      SL.Add(Format('      for i := 0 to F%s.Count-1 do', [DelphiProp.PropertyName]));
-                      SL.Add(Format('        tmpBuf.writeRawVarint32(Integer(F%s[i]));', [DelphiProp.PropertyName]));
-                      SL.Add(Format('      ProtoBuf.writeMessage(%s, tmpBuf);', [DelphiProp.tagName]));
-                      SL.Add('    finally');
-                      SL.Add('      tmpBuf.Free;');
-                      SL.Add('    end;');
-                      SL.Add('  end;');
+                      SL.Add(       '  begin');
+                      SL.Add(Format('    for i := 0 to F%s.Count-1 do', [DelphiProp.PropertyName]));
+                      SL.Add(Format('      tmpBuf.writeRawVarint32(Integer(F%s[i]));', [DelphiProp.PropertyName]));
+                      SL.Add(Format('    ProtoBuf.writeMessage(%s, tmpBuf);', [DelphiProp.tagName]));
+                      SL.Add(       '  end;');
                     end
                   else
                     begin
@@ -543,17 +529,34 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
           end;
       end;
 
-    SL.Add('end;');
-    SL.Add('');
-
     if bNeedtmpBuf or bNeedCounterVar then
       begin
         if bNeedCounterVar then
+        begin
           SL.Insert(iInsertVarBlock, '  i: Integer;');
+          Inc(iInserttmpBufCreation);
+        end;
         if bNeedtmpBuf then
+        begin
           SL.Insert(iInsertVarBlock, '  tmpBuf: TProtoBufOutput;');
+          Inc(iInserttmpBufCreation);
+        end;
         SL.Insert(iInsertVarBlock, 'var');
+        Inc(iInserttmpBufCreation);
+        if bNeedtmpBuf then
+          begin
+            SL.Insert(iInserttmpBufCreation, '  try');
+            SL.Insert(iInserttmpBufCreation, '  tmpBuf:= TProtoBufOutput.Create;');
+            for i:= iInserttmpBufCreation + 2 to SL.Count - 1 do
+              SL[i]:= '  ' + SL[i];
+            SL.Add('  finally');
+            SL.Add('    tmpBuf.Free');
+            SL.Add('  end;');
+          end;
       end;
+
+    SL.Add('end;');
+    SL.Add('');
   end;
 
   procedure WriteSetterProcs(ProtoMsg: TProtoBufMessage; SL: TStrings);
