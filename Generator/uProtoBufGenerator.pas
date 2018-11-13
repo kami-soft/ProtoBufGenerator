@@ -326,10 +326,11 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
 
   procedure WriteLoadProc(ProtoMsg: TProtoBufMessage; SL: TStrings);
   var
-    i, iInsertVarBlock: Integer;
+    i, iInsertVarBlock, iBeginBlock: Integer;
     Prop: TProtoBufProperty;
-    DelphiProp: TDelphiProperty;
+    DelphiProp, OneOfDelphiProp: TDelphiProperty;
     bNeedtmpBuf: Boolean;
+    sIndent: string;
   begin
     bNeedtmpBuf:= False;
     SL.Add(Format('function T%s.LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: Integer; WireType: Integer): Boolean;', [ProtoMsg.Name]));
@@ -343,31 +344,34 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
       end;
     SL.Add('  if Result then');
     SL.Add('    exit;');
-    SL.Add('  Result:= True;');
+    SL.Add('  Result := True;');
     SL.Add('  case fieldNumber of');
     for i := 0 to ProtoMsg.Count - 1 do
       begin
         Prop := ProtoMsg[i];
         ParsePropType(Prop, Proto, DelphiProp);
+        if Prop.PropKind = ptOneOf then
+          Continue;
         SL.Add(Format('    %s:', [DelphiProp.tagName]));
+        iBeginBlock:= SL.Count;
+        SL.Add('      begin');
+        sIndent:=  StringOfChar(' ', 8); {4 for case + 4 for tag and begin/end}
         if not DelphiProp.IsList then
           begin
             if not DelphiProp.isComplex then
-              SL.Add(Format('      %s := ProtoBuf.read%s;', [DelphiProp.PropertyName, GetProtoBufMethodForScalarType(Prop)]))
+              SL.Add(Format('%s%s := ProtoBuf.read%s;', [sIndent, DelphiProp.PropertyName, GetProtoBufMethodForScalarType(Prop)]))
             else
               if not DelphiProp.isObject then
-                SL.Add(Format('      %s := %s(ProtoBuf.readEnum);', [DelphiProp.PropertyName, DelphiProp.PropertyType]))
+                SL.Add(Format('%s%s := %s(ProtoBuf.readEnum);', [sIndent, DelphiProp.PropertyName, DelphiProp.PropertyType]))
               else
                 begin
                   bNeedtmpBuf:= True;
-                  SL.Add('      begin');
-                  SL.Add('        tmpBuf := ProtoBuf.ReadSubProtoBufInput;');
-                  SL.Add('        try');
-                  SL.Add(Format('          F%s.LoadFromBuf(tmpBuf);', [DelphiProp.PropertyName]));
-                  SL.Add('        finally');
-                  SL.Add('          tmpBuf.Free;');
-                  SL.Add('        end;');
-                  SL.Add('      end;');
+                  SL.Add(Format('%stmpBuf := ProtoBuf.ReadSubProtoBufInput;', [sIndent]));
+                  SL.Add(Format('%stry', [sIndent]));
+                  SL.Add(Format('%s  F%s.LoadFromBuf(tmpBuf);', [sIndent, DelphiProp.PropertyName]));
+                  SL.Add(Format('%sfinally', [sIndent]));
+                  SL.Add(Format('%s  tmpBuf.Free;', [sIndent]));
+                  SL.Add(Format('%send;', [sIndent]));
                 end;
           end
         else
@@ -377,21 +381,20 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
                 if PropertyIsPrimitiveNumericPacked(Prop) then
                   begin
                     bNeedtmpBuf:= True;
-                    SL.Add('      if WireType = WIRETYPE_LENGTH_DELIMITED then');
-                    SL.Add('        begin');
-                    SL.Add('          tmpBuf:=ProtoBuf.ReadSubProtoBufInput;');
-                    SL.Add('          try');
-                    SL.Add('            while tmpBuf.getPos<tmpBuf.BufSize do');
-                    SL.Add(Format('              F%s.Add(tmpBuf.read%s);', [DelphiProp.PropertyName, GetProtoBufMethodForScalarType(Prop)]));
-                    SL.Add('          finally');
-                    SL.Add('            tmpBuf.Free;');
-                    SL.Add('          end;');
-                    SL.Add('        end');
-                    SL.Add('      else');
-                    SL.Add(Format('        F%s.Add(ProtoBuf.read%s);', [DelphiProp.PropertyName, GetProtoBufMethodForScalarType(Prop)]));
+                    SL.Add(Format('%sif WireType = WIRETYPE_LENGTH_DELIMITED then', [sIndent]));
+                    SL.Add(Format('%sbegin', [sIndent]));
+                    SL.Add(Format('%s  tmpBuf:=ProtoBuf.ReadSubProtoBufInput;', [sIndent]));
+                    SL.Add(Format('%s  try', [sIndent]));
+                    SL.Add(Format('%s    while tmpBuf.getPos < tmpBuf.BufSize do', [sIndent]));
+                    SL.Add(Format('%s      F%s.Add(tmpBuf.read%s);', [sIndent, DelphiProp.PropertyName, GetProtoBufMethodForScalarType(Prop)]));
+                    SL.Add(Format('%s  finally', [sIndent]));
+                    SL.Add(Format('%s    tmpBuf.Free;', [sIndent]));
+                    SL.Add(Format('%s  end;', [sIndent]));
+                    SL.Add(Format('%send else', [sIndent]));
+                    SL.Add(Format('%sF%s.Add(ProtoBuf.read%s);', [sIndent, DelphiProp.PropertyName, GetProtoBufMethodForScalarType(Prop)]));
                   end
                 else
-                  SL.Add(Format('      F%s.Add(ProtoBuf.read%s);', [DelphiProp.PropertyName, GetProtoBufMethodForScalarType(Prop)]));
+                  SL.Add(Format('%sF%s.Add(ProtoBuf.read%s);', [sIndent, DelphiProp.PropertyName, GetProtoBufMethodForScalarType(Prop)]));
               end
             else
               if not DelphiProp.isObject then
@@ -399,28 +402,40 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
                   if (Prop.PropOptions.Value['packed'] = 'true') then
                     begin
                       bNeedtmpBuf:= True;
-                      SL.Add('      if WireType = WIRETYPE_LENGTH_DELIMITED then');
-                      SL.Add('        begin');
-                      SL.Add('          tmpBuf:=ProtoBuf.ReadSubProtoBufInput;');
-                      SL.Add('          try');
-                      SL.Add('            while tmpBuf.getPos<tmpBuf.BufSize do');
-                      SL.Add(Format('              F%s.Add(T%s(tmpBuf.readEnum));', [DelphiProp.PropertyName, Prop.PropType]));
-                      SL.Add('          finally');
-                      SL.Add('            tmpBuf.Free;');
-                      SL.Add('          end;');
-                      SL.Add('        end');
-                      SL.Add('      else');
-                      SL.Add(Format('        F%s.Add(T%s(ProtoBuf.readEnum));', [DelphiProp.PropertyName, Prop.PropType]));
+                      SL.Add(Format('%sif WireType = WIRETYPE_LENGTH_DELIMITED then', [sIndent]));
+                      SL.Add(Format('%sbegin', [sIndent]));
+                      SL.Add(Format('%s  tmpBuf:=ProtoBuf.ReadSubProtoBufInput;', [sIndent]));
+                      SL.Add(Format('%s  try', [sIndent]));
+                      SL.Add(Format('%s  while tmpBuf.getPos<tmpBuf.BufSize do', [sIndent]));
+                      SL.Add(Format('%s    F%s.Add(T%s(tmpBuf.readEnum));', [sIndent, DelphiProp.PropertyName, Prop.PropType]));
+                      SL.Add(Format('%s  finally', [sIndent]));
+                      SL.Add(Format('%s    tmpBuf.Free;', [sIndent]));
+                      SL.Add(Format('%s  end;', [sIndent]));
+                      SL.Add(Format('%send else', [sIndent]));
+                      SL.Add(Format('%sF%s.Add(T%s(ProtoBuf.readEnum));', [sIndent, DelphiProp.PropertyName, Prop.PropType]));
                     end
                   else
-                    SL.Add(Format('      F%s.Add(T%s(ProtoBuf.readEnum));', [DelphiProp.PropertyName, Prop.PropType]));
+                    SL.Add(Format('%sF%s.Add(T%s(ProtoBuf.readEnum));', [sIndent, DelphiProp.PropertyName, Prop.PropType]));
                 end
               else
-                SL.Add(Format('      F%s.AddFromBuf(ProtoBuf, fieldNumber);', [DelphiProp.PropertyName]));
+                SL.Add(Format('%sF%s.AddFromBuf(ProtoBuf, fieldNumber);', [sIndent, DelphiProp.PropertyName]));
           end;
+        if Prop.OneOfPropertyParent <> nil then
+        begin
+          ParsePropType(Prop.OneOfPropertyParent, Proto, OneOfDelphiProp);
+          SL.Add(Format('%s%s:= %s_%s_%s;', [sIndent, OneOfDelphiProp.PropertyName, ProtoMsg.Name, OneOfDelphiProp.PropertyName, DelphiProp.PropertyName]));
+        end;
+        if SL.Count = iBeginBlock + 2 then
+        begin
+          //we added only begin and one extra line, so remove begin block and
+          //remove 2 intending spaces from the one inserted line
+          SL.Delete(iBeginBlock);
+          SL[iBeginBlock]:= Copy(SL[iBeginBlock], 3, MaxInt);
+        end else
+          SL.Add('      end;');
       end;
     SL.Add('  else');
-    SL.Add('    Result:= False;');
+    SL.Add('    Result := False;');
     SL.Add('  end;');
     SL.Add('end;');
     SL.Add('');
@@ -448,6 +463,9 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
       begin
         Prop := ProtoMsg[i];
         ParsePropType(Prop, Proto, DelphiProp);
+
+        if Prop.PropKind = ptOneOf then
+          Continue;
 
         SL.Add(Format('  if FieldHasValue[%s] then', [DelphiProp.tagName]));
         if not DelphiProp.IsList then
@@ -542,9 +560,9 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
 
   procedure WriteSetterProcs(ProtoMsg: TProtoBufMessage; SL: TStrings);
   var
-    i: Integer;
-    Prop: TProtoBufProperty;
-    DelphiProp: TDelphiProperty;
+    i, j: Integer;
+    Prop, OneOfChildProp: TProtoBufProperty;
+    DelphiProp, OneOfDelphiProp: TDelphiProperty;
   begin
     for i := 0 to ProtoMsg.Count - 1 do
       begin
@@ -552,11 +570,36 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
         ParsePropType(Prop, Proto, DelphiProp);
         if DelphiProp.readOnlyDelphiProperty then
           Continue;
-        SL.Add(Format('procedure T%s.Set%s(Tag: Integer; const Value: %s);',
-          [ProtoMsg.Name, DelphiProp.PropertyName, DelphiProp.PropertyType]));
+        if  Prop.PropKind = ptOneOf then
+          SL.Add(Format('procedure T%s.Set%s(const Value: %s);',
+            [ProtoMsg.Name, DelphiProp.PropertyName, DelphiProp.PropertyType]))
+        else
+          SL.Add(Format('procedure T%s.Set%s(Tag: Integer; const Value: %s);',
+            [ProtoMsg.Name, DelphiProp.PropertyName, DelphiProp.PropertyType]));
         SL.Add('begin');
         SL.Add(Format('  F%s:= Value;', [DelphiProp.PropertyName]));
-        SL.Add('  FieldHasValue[Tag]:= True;');
+        if Prop.PropKind = ptOneOf then
+        begin
+          //clear FieldHasValue for all others of this OneOf
+          for j:= i + 1 to ProtoMsg.Count - 1 do
+          begin
+            OneOfChildProp:= ProtoMsg[j];
+            ParsePropType(OneOfChildProp, Proto, OneOfDelphiProp);
+            if OneOfChildProp.OneOfPropertyParent <> Prop then
+              Break;
+            SL.Add(Format('  FieldHasValue[%s]:= Value = %s_%s_%s;',
+              [OneOfDelphiProp.tagName, ProtoMsg.Name, DelphiProp.PropertyName,
+              OneOfDelphiProp.PropertyName]));
+          end;
+        end else
+        begin
+          if Prop.OneOfPropertyParent <> nil then
+          begin
+            ParsePropType(Prop.OneOfPropertyParent, Proto, OneOfDelphiProp);
+            SL.Add(Format('  %s:= %s_%s_%s;', [OneOfDelphiProp.PropertyName, ProtoMsg.Name, OneOfDelphiProp.PropertyName, DelphiProp.PropertyName]));
+          end else
+            SL.Add('  FieldHasValue[Tag]:= True;');
+        end;
         SL.Add('end;');
         SL.Add('');
       end;
@@ -615,9 +658,9 @@ procedure TProtoBufGenerator.GenerateInterfaceSection(Proto: TProtoFile; SL: TSt
 
   procedure WriteMessageToSL(ProtoMsg: TProtoBufMessage; SL: TStrings);
   var
-    i: Integer;
-    Prop: TProtoBufProperty;
-    DelphiProp: TDelphiProperty;
+    i, j: Integer;
+    Prop, OneOfProp: TProtoBufProperty;
+    DelphiProp, OneOfDelphiProp: TDelphiProperty;
     s, sdefValue: string;
   begin
     if ProtoMsg.IsImported then
@@ -627,6 +670,40 @@ procedure TProtoBufGenerator.GenerateInterfaceSection(Proto: TProtoFile; SL: TSt
     else
       s := ProtoMsg.ExtendOf;
     SL.Add(Format('  T%s = class(T%s)', [ProtoMsg.Name, s]));
+    //write tag constants and OneOfEnums, need to be first since
+    //OneOfEnum is used for strict private field
+    SL.Add('  public');
+    for i := 0 to ProtoMsg.Count - 1 do
+      begin
+        Prop := ProtoMsg[i];
+        ParsePropType(Prop, Proto, DelphiProp);
+        if Prop.PropKind = ptOneOf then
+          Continue;
+        s := Format('    const %s = %d;', [DelphiProp.tagName, Prop.PropFieldNum]);
+        SL.Add(s);
+      end;
+    //write oneOfEnums, using the tag constants we just wrote
+    for i:= 0 to ProtoMsg.Count - 1 do
+    begin
+      OneOfProp := ProtoMsg[i];
+      if OneOfProp.PropKind <> ptOneOf then
+        Continue;
+      ParsePropType(OneOfProp, Proto, OneOfDelphiProp);
+      SL.Add(Format('    type %s = (', [OneOfDelphiProp.PropertyType]));
+      SL.Add(Format('      %s_%s_Nothing = 0,', [ProtoMsg.Name, OneOfDelphiProp.PropertyName]));
+      for j:= i + 1 to ProtoMsg.Count - 1 do
+      begin
+        Prop:= ProtoMsg[j];
+        if Prop.OneOfPropertyParent <> OneOfProp then
+          Break;
+        ParsePropType(Prop, Proto, DelphiProp);
+        SL.Add(Format('      %s_%s_%s = %s,', [ProtoMsg.Name, OneOfDelphiProp.PropertyName, DelphiProp.PropertyName, DelphiProp.tagName]));
+      end;
+      //remove comma of last enum value
+      s:= SL[SL.Count - 1];
+      SL[SL.Count - 1]:= Copy(s, 1, Length(s) - 1);
+      SL.Add('    );');
+    end;
     SL.Add('  strict private');
     //field definitions
     for i := 0 to ProtoMsg.Count - 1 do
@@ -643,7 +720,10 @@ procedure TProtoBufGenerator.GenerateInterfaceSection(Proto: TProtoFile; SL: TSt
         ParsePropType(Prop, Proto, DelphiProp);
         if DelphiProp.readOnlyDelphiProperty then
           Continue;
-        s := Format('    procedure Set%s(Tag: Integer; const Value: %s);', [DelphiProp.PropertyName, DelphiProp.PropertyType]);
+        if Prop.PropKind = ptOneOf then
+          s := Format('    procedure Set%s(const Value: %s);', [DelphiProp.PropertyName, DelphiProp.PropertyType])
+        else
+          s := Format('    procedure Set%s(Tag: Integer; const Value: %s);', [DelphiProp.PropertyName, DelphiProp.PropertyType]);
         SL.Add(s);
       end;
 
@@ -652,14 +732,6 @@ procedure TProtoBufGenerator.GenerateInterfaceSection(Proto: TProtoFile; SL: TSt
     SL.Add('    procedure SaveFieldsToBuf(ProtoBuf: TProtoBufOutput); override;');
 
     SL.Add('  public');
-    for i := 0 to ProtoMsg.Count - 1 do
-      begin
-        Prop := ProtoMsg[i];
-        ParsePropType(Prop, Proto, DelphiProp);
-        s := Format('    const %s = %d;', [DelphiProp.tagName, Prop.PropFieldNum]);
-        SL.Add(s);
-      end;
-    SL.Add('');
     if MsgNeedConstructor(ProtoMsg, Proto) then
       begin
         SL.Add('    constructor Create; override;');
@@ -679,17 +751,25 @@ procedure TProtoBufGenerator.GenerateInterfaceSection(Proto: TProtoFile; SL: TSt
               DelphiProp.PropertyName]);
           end else
           begin
-            s := Format('    property %s: %s index %s read F%s write Set%s',
-              [DelphiProp.PropertyName, DelphiProp.PropertyType,
-              DelphiProp.tagName, DelphiProp.PropertyName,
-              DelphiProp.PropertyName]);
-            if Prop.PropOptions.HasValue['default'] then
-              begin
-                sdefValue := Prop.PropOptions.Value['default'];
-                if StartsStr('"', sdefValue) or ContainsStr(sdefValue, '.') or ContainsStr(sdefValue, 'e') then
-                  s := s + '; //';
-                s := s + Format(' default %s', [ReQuoteStr(sdefValue)]);
-              end;
+            if Prop.PropKind = ptOneOf then
+            begin
+              s := Format('    property %s: %s read F%s write Set%s',
+                [DelphiProp.PropertyName, DelphiProp.PropertyType,
+                DelphiProp.PropertyName, DelphiProp.PropertyName]);
+            end else
+            begin
+              s := Format('    property %s: %s index %s read F%s write Set%s',
+                [DelphiProp.PropertyName, DelphiProp.PropertyType,
+                DelphiProp.tagName, DelphiProp.PropertyName,
+                DelphiProp.PropertyName]);
+              if Prop.PropOptions.HasValue['default'] then
+                begin
+                  sdefValue := Prop.PropOptions.Value['default'];
+                  if StartsStr('"', sdefValue) or ContainsStr(sdefValue, '.') or ContainsStr(sdefValue, 'e') then
+                    s := s + '; //';
+                  s := s + Format(' default %s', [ReQuoteStr(sdefValue)]);
+                end;
+            end;
           end;
         s := s + ';';
         SL.Add(s);
@@ -771,12 +851,12 @@ end;
 
 function TDelphiProperty.readOnlyDelphiProperty: Boolean;
 begin
-  Result:= IsList or isObject;
+  Result := IsList or isObject;
 end;
 
 function TDelphiProperty.tagName: string;
 begin
-  Result:= 'tag_' + PropertyName;
+  Result := 'tag_' + PropertyName;
 end;
 
 end.

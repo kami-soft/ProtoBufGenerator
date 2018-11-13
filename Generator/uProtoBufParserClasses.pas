@@ -14,7 +14,8 @@ type
     ptRequired, //
     ptOptional, //
     ptRepeated, //
-    ptReserved);
+    ptReserved,
+    ptOneOf);
 
   TScalarPropertyType = ( //
     sptComplex, //
@@ -59,6 +60,7 @@ type
     FPropKind: TPropKind;
     FPropComment: string;
     FPropOptions: TProtoBufPropOptions;
+    FOneOfPropertyParent: TProtoBufProperty;
   public
     constructor Create(ARoot: TAbstractProtoBufParserItem); override;
     destructor Destroy; override;
@@ -70,6 +72,7 @@ type
     property PropFieldNum: integer read FPropFieldNum;
     property PropComment: string read FPropComment;
     property PropOptions: TProtoBufPropOptions read FPropOptions;
+    property OneOfPropertyParent: TProtoBufProperty read FOneOfPropertyParent write FOneOfPropertyParent;
   end;
 
   TProtoBufEnumValue = class(TAbstractProtoBufParserItem)
@@ -82,8 +85,12 @@ type
   end;
 
   TProtoBufEnum = class(TAbstractProtoBufParserContainer<TProtoBufEnumValue>)
+  strict private
+    FAllowAlias: Boolean;
   public
     procedure ParseFromProto(const Proto: string; var iPos: integer); override;
+
+    property AllowAlias: Boolean read FAllowAlias;
   end;
 
   TProtoBufMessage = class(TAbstractProtoBufParserContainer<TProtoBufProperty>)
@@ -159,6 +166,8 @@ begin
       Result := 'repeated';
     ptReserved:
       Result := 'reserved';
+    ptOneOf:
+      Result := 'oneof';
   end;
 end;
 
@@ -325,31 +334,38 @@ begin
 
   FPropType := Buf;
 
-  FName := ReadWordFromBuf(Proto, iPos, ['=']);
+  if FPropKind = ptOneOf then
+  begin
+    FName := FPropType;
+    // skip '{' character
+    SkipRequiredChar(Proto, iPos, '{');
+  end else
+  begin
+    FName := ReadWordFromBuf(Proto, iPos, ['=']);
 
-  // skip '=' character
-  SkipRequiredChar(Proto, iPos, '=');
+    // skip '=' character
+    SkipRequiredChar(Proto, iPos, '=');
 
-  // read property tag
-  Buf := ReadWordFromBuf(Proto, iPos, [';', '[']);
-  FPropFieldNum := StrToInt(Buf);
+    // read property tag
+    Buf := ReadWordFromBuf(Proto, iPos, [';', '[']);
+    FPropFieldNum := StrToInt(Buf);
+    SkipWhitespaces(Proto, iPos);
+    if Proto[iPos] = '[' then
+      FPropOptions.ParseFromProto(Proto, iPos);
 
-  SkipWhitespaces(Proto, iPos);
-  if Proto[iPos] = '[' then
-    FPropOptions.ParseFromProto(Proto, iPos);
+    if Assigned(FRoot) then
+      if TProtoFile(FRoot).ProtoSyntaxVersion = psv3 then
+        if not FPropOptions.HasValue['packed'] then
+          begin
+            tmpOption := TProtoBufPropOption.Create(FRoot);
+            FPropOptions.Add(tmpOption);
+            tmpOption.Name := 'packed';
+            tmpOption.FOptionValue := 'true';
+          end;
 
-  if Assigned(FRoot) then
-    if TProtoFile(FRoot).ProtoSyntaxVersion = psv3 then
-      if not FPropOptions.HasValue['packed'] then
-        begin
-          tmpOption := TProtoBufPropOption.Create(FRoot);
-          FPropOptions.Add(tmpOption);
-          tmpOption.Name := 'packed';
-          tmpOption.FOptionValue := 'true';
-        end;
-
-  // read separator
-  SkipRequiredChar(Proto, iPos, ';');
+    // read separator
+    SkipRequiredChar(Proto, iPos, ';');
+  end;
 
   FPropComment := ReadCommentIfExists(Proto, iPos);
 end;
@@ -451,6 +467,8 @@ end;
 procedure TProtoBufEnum.ParseFromProto(const Proto: string; var iPos: integer);
 var
   Item: TProtoBufEnumValue;
+  lPos: Integer;
+  sOptionPeek, sOptionValue: string;
 begin
   inherited;
   (* Enum1 {
@@ -463,14 +481,29 @@ begin
   SkipAllComments(Proto, iPos);
   while Proto[iPos] <> '}' do
     begin
-      Item := TProtoBufEnumValue.Create(FRoot);
-      try
-        Item.ParseFromProto(Proto, iPos);
-        Add(Item);
-        Item := nil;
-        SkipAllComments(Proto, iPos);
-      finally
-        Item.Free;
+      lPos:= iPos;
+      sOptionPeek:= ReadWordFromBuf(Proto, lPos, [';']);
+      if SameText(sOptionPeek, 'option') then
+      begin
+        iPos:= lPos;
+        sOptionPeek:= ReadWordFromBuf(Proto, iPos, [';']);
+        SkipRequiredChar(Proto, iPos, '=');
+        sOptionValue:= ReadWordFromBuf(Proto, iPos, [';']);
+        if SameText(sOptionPeek, 'allow_alias') then
+          FAllowAlias:= SameText(sOptionValue, 'true') else
+          raise Exception.CreateFmt('Unknown option %s while parsing enum %s', [sOptionPeek, FName]);
+        SkipRequiredChar(Proto, iPos, ';');
+      end else
+      begin
+        Item := TProtoBufEnumValue.Create(FRoot);
+        try
+          Item.ParseFromProto(Proto, iPos);
+          Add(Item);
+          Item := nil;
+          SkipAllComments(Proto, iPos);
+        finally
+          Item.Free;
+        end;
       end;
     end;
   SkipRequiredChar(Proto, iPos, '}');
@@ -499,7 +532,7 @@ end;
 
 procedure TProtoBufMessage.ParseFromProto(const Proto: string; var iPos: integer);
 var
-  Item: TProtoBufProperty;
+  Item, OneOfPropertyParent: TProtoBufProperty;
 begin
   inherited;
   (*
@@ -509,11 +542,20 @@ begin
     }
   *)
 
+  OneOfPropertyParent:= nil;
   FName := ReadWordFromBuf(Proto, iPos, ['{']);
   SkipRequiredChar(Proto, iPos, '{');
   SkipAllComments(Proto, iPos);
-  while Proto[iPos] <> '}' do
+  while (Proto[iPos] <> '}') or (OneOfPropertyParent <> nil) do
     begin
+      if (OneOfPropertyParent <> nil) and (Proto[iPos] = '}') then
+      begin
+        OneOfPropertyParent:= nil;
+        SkipRequiredChar(Proto, iPos, '}');
+        SkipAllComments(Proto, iPos);
+        SkipWhitespaces(Proto, iPos);
+        Continue;
+      end;
       SkipAllComments(Proto, iPos);
       SkipWhitespaces(Proto, iPos);
       if PosEx('enum', Proto, iPos) = iPos then
@@ -538,7 +580,14 @@ begin
       Item := TProtoBufProperty.Create(FRoot);
       try
         Item.ParseFromProto(Proto, iPos);
+        Item.OneOfPropertyParent:= OneOfPropertyParent;
         Add(Item);
+        if Item.PropKind = ptOneOf then
+        begin
+          if OneOfPropertyParent <> nil then
+            raise Exception.CreateFmt('Unsupported nested oneof property %s within %s', [Item.FName, OneOfPropertyParent.Name]);
+          OneOfPropertyParent:= Item;
+        end;
         Item := nil;
         SkipAllComments(Proto, iPos);
       finally
@@ -547,11 +596,8 @@ begin
     end;
   SkipRequiredChar(Proto, iPos, '}');
 
-  Sort(TComparer<TProtoBufProperty>.Construct(
-    function(const Left, Right: TProtoBufProperty): integer
-    begin
-      Result := Left.PropFieldNum - Right.PropFieldNum;
-    end));
+  //do NOT sort field definitions by FieldNumber; order is important for OneOf,
+  //also better to keep order of declaration the same as in .proto file
 end;
 
 { TProtoFile }
