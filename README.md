@@ -2,6 +2,13 @@
 
 Delphi ProtoBuf files generator
 
+### Update 13.11.2018
+by @modersohn  (https://github.com/modersohn)
+- support for optional fields
+- strong check for fill all required fields
+- minimize and beautify the generated code
+
+
 ### Update 14.01.2017
 Add console generator version
 
