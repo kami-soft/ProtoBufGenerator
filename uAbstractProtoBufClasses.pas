@@ -11,22 +11,28 @@ uses
   pbOutput;
 
 type
+  TFieldState = set of (fsRequired, fsHasValue);
+
   TAbstractProtoBufClass = class(TObject)
   strict private
   type
-    TRequiredFields = TDictionary<integer, Boolean>;
+    TFieldStates = TDictionary<integer, TFieldState>;
   strict private
-    FRequiredFields: TRequiredFields;
+    FFieldStates: TFieldStates;
+    function GetFieldState(Tag: Integer): TFieldState;
+    procedure AddFieldState(Tag: Integer; AFieldState: TFieldState);
+    procedure ClearFieldState(Tag: Integer; AFieldState: TFieldState);
+    function GetFieldHasValue(Tag: Integer): Boolean;
+    procedure SetFieldHasValue(Tag: Integer; const Value: Boolean);
   strict protected
     procedure AddLoadedField(Tag: integer);
     procedure RegisterRequiredField(Tag: integer);
-    function IsAllRequiredLoaded: Boolean;
 
     procedure BeforeLoad; virtual;
     procedure AfterLoad; virtual;
 
     function LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer; WireType: integer): Boolean; virtual;
-    procedure SaveFieldsToBuf(ProtoBuf: TProtoBufOutput); virtual; abstract;
+    procedure SaveFieldsToBuf(ProtoBuf: TProtoBufOutput); virtual;
   public
     constructor Create; virtual;
     destructor Destroy; override;
@@ -39,6 +45,10 @@ type
 
     procedure LoadFromBuf(ProtoBuf: TProtoBufInput);
     procedure SaveToBuf(ProtoBuf: TProtoBufOutput);
+
+    function AllRequiredFieldsValid: Boolean;
+
+    property FieldHasValue[Tag: Integer]: Boolean read GetFieldHasValue write SetFieldHasValue;
   end;
 
   TProtoBufClassList<T: TAbstractProtoBufClass, constructor> = class(TObjectList<T>)
@@ -54,10 +64,21 @@ uses
 
 { TAbstractProtoBufClass }
 
+function TAbstractProtoBufClass.GetFieldState(Tag: Integer): TFieldState;
+begin
+  Result:= [];
+  FFieldStates.TryGetValue(Tag, Result);
+end;
+
+procedure TAbstractProtoBufClass.AddFieldState(Tag: integer;
+  AFieldState: TFieldState);
+begin
+  FFieldStates.AddOrSetValue(Tag, GetFieldState(Tag) + AFieldState);
+end;
+
 procedure TAbstractProtoBufClass.AddLoadedField(Tag: integer);
 begin
-  if FRequiredFields.ContainsKey(Tag) then
-    FRequiredFields[Tag] := True;
+  AddFieldState(Tag, [fsHasValue]);
 end;
 
 procedure TAbstractProtoBufClass.AfterLoad;
@@ -80,33 +101,48 @@ begin
 end;
 
 procedure TAbstractProtoBufClass.BeforeLoad;
+var
+  pair: TPair<integer, TFieldState>;
 begin
+  //clear HasValue flags
+  for pair in FFieldStates do
+    FFieldStates.Items[pair.Key]:= pair.Value - [fsHasValue];
+end;
 
+procedure TAbstractProtoBufClass.ClearFieldState(Tag: Integer;
+  AFieldState: TFieldState);
+begin
+  FFieldStates.AddOrSetValue(Tag, GetFieldState(Tag) - AFieldState);
 end;
 
 constructor TAbstractProtoBufClass.Create;
 begin
   inherited Create;
-  FRequiredFields := TRequiredFields.Create;
+  FFieldStates:= TFieldStates.Create;
 end;
 
 destructor TAbstractProtoBufClass.Destroy;
 begin
-  FreeAndNil(FRequiredFields);
+  FreeAndNil(FFieldStates);
   inherited;
 end;
 
-function TAbstractProtoBufClass.IsAllRequiredLoaded: Boolean;
+function TAbstractProtoBufClass.GetFieldHasValue(Tag: Integer): Boolean;
+begin
+  Result:= fsHasValue in GetFieldState(Tag);
+end;
+
+function TAbstractProtoBufClass.AllRequiredFieldsValid: Boolean;
 var
-  b: Boolean;
+  state: TFieldState;
 begin
   Result := True;
-  for b in FRequiredFields.Values do
-    if not b then
-      begin
-        Result := False;
-        Break;
-      end;
+  for state in FFieldStates.Values do
+    if state * [fsRequired, fsHasValue] = [fsRequired] then
+    begin
+      Result:= False;
+      Break;
+    end;
 end;
 
 procedure TAbstractProtoBufClass.LoadFromBuf(ProtoBuf: TProtoBufInput);
@@ -126,8 +162,8 @@ begin
         AddLoadedField(FieldNumber);
       Tag := ProtoBuf.readTag;
     end;
-  if not IsAllRequiredLoaded then
-    raise EStreamError.Create('not enought fields');
+  if not AllRequiredFieldsValid then
+    raise EStreamError.CreateFmt('Loading %s: not all required fields have been loaded', [ClassName]);
 
   AfterLoad;
 end;
@@ -172,7 +208,13 @@ end;
 
 procedure TAbstractProtoBufClass.RegisterRequiredField(Tag: integer);
 begin
-  FRequiredFields.Add(Tag, False);
+  AddFieldState(Tag, [fsRequired]);
+end;
+
+procedure TAbstractProtoBufClass.SaveFieldsToBuf(ProtoBuf: TProtoBufOutput);
+begin
+  if not AllRequiredFieldsValid then
+    raise EStreamError.CreateFmt('Saving %s: not all required fields have been set', [ClassName]);
 end;
 
 procedure TAbstractProtoBufClass.SaveToBuf(ProtoBuf: TProtoBufOutput);
@@ -191,6 +233,14 @@ begin
   finally
     pb.Free;
   end;
+end;
+
+procedure TAbstractProtoBufClass.SetFieldHasValue(Tag: Integer;
+  const Value: Boolean);
+begin
+  if Value then
+    AddFieldState(Tag, [fsHasValue]) else
+    ClearFieldState(Tag, [fsHasValue]);
 end;
 
 { TProtoBufList<T> }
