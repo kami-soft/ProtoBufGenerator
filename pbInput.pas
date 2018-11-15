@@ -291,14 +291,14 @@ end;
 
 function TProtoBufInput.ReadSubProtoBufInput: TProtoBufInput;
 var
-  BufSize: integer;
+  lBufSize: integer;
   buf: Pointer;
 begin
-  BufSize := readInt32;
-  buf := AllocMem(BufSize);
+  lBufSize := readInt32;
+  buf := AllocMem(lBufSize);
   try
-    readRawBytes(buf^, BufSize);
-    result := TProtoBufInput.Create(buf, BufSize, true);
+    readRawBytes(buf^, lBufSize);
+    result := TProtoBufInput.Create(buf, lBufSize, true);
   finally
     FreeMem(buf);
   end;
