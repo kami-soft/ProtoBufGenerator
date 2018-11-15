@@ -35,6 +35,7 @@ type
   end;
 
 implementation
+
 uses
   pbInput,
   pbOutput;
@@ -57,7 +58,6 @@ var
   iPos: Integer;
   sProto: string;
 begin
-  // TODO: Setup method call parameters
   Proto := TProtoFile.Create(nil);
   try
     iPos := 1;

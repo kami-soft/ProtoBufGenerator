@@ -48,7 +48,7 @@ type
   end;
   // Test methods for class TProtoBufProperty
 
-  TestTProtoBufProperty = class(TTestCase)
+  TestTProtoBufProperty = class(TestTAbstractProtoBufParserItem)
   strict private
     FProtoBufProperty: TProtoBufProperty;
   public
@@ -56,6 +56,7 @@ type
     procedure TearDown; override;
   published
     procedure TestParseFromProto;
+    procedure TestCommentAfter;
   end;
   // Test methods for class TProtoBufEnumValue
 
@@ -119,29 +120,14 @@ type
   TestTProtoBufMessage = class(TTestCase)
   strict private
     FProtoBufMessage: TProtoBufMessage;
+    FLastiPos: Integer;
+  private
+    procedure CallParseFromProto(const AProto: string);
   public
     procedure SetUp; override;
     procedure TearDown; override;
   published
     procedure TestParseFromProto;
-  end;
-  // Test methods for class TProtoBufEnumList
-
-  TestTProtoBufEnumList = class(TTestCase)
-  strict private
-    FProtoBufEnumList: TProtoBufEnumList;
-  public
-    procedure SetUp; override;
-    procedure TearDown; override;
-  end;
-  // Test methods for class TProtoBufMessageList
-
-  TestTProtoBufMessageList = class(TTestCase)
-  strict private
-    FProtoBufMessageList: TProtoBufMessageList;
-  public
-    procedure SetUp; override;
-    procedure TearDown; override;
   end;
   // Test methods for class TProtoFile
 
@@ -205,16 +191,20 @@ begin
   FProtoBufProperty := nil;
 end;
 
-procedure TestTProtoBufProperty.TestParseFromProto;
-var
-  iPos: Integer;
-  Proto: string;
+procedure TestTProtoBufProperty.TestCommentAfter;
 begin
-  iPos := 1;
-  Proto := 'int32 DefField1  = 1;';
-  // TODO: Setup method call parameters
-  FProtoBufProperty.ParseFromProto(Proto, iPos);
-  // TODO: Validate method results
+  CallParseFromProto('int32 Field = 1; //with comment', FProtoBufProperty);
+  CheckTrue(ptDefaultOptional = FProtoBufProperty.PropKind);
+  CheckEquals('int32', FProtoBufProperty.PropType);
+  CheckEquals('Field', FProtoBufProperty.Name);
+  CheckEquals(1, FProtoBufProperty.PropFieldNum);
+  CheckEquals(0, FProtoBufProperty.PropOptions.Count);
+  CheckEquals('with comment', FProtoBufProperty.PropComment);
+end;
+
+procedure TestTProtoBufProperty.TestParseFromProto;
+begin
+  CallParseFromProto('int32 DefField1  = 1;', FProtoBufProperty);
   CheckTrue(ptDefaultOptional = FProtoBufProperty.PropKind);
   CheckEquals('int32', FProtoBufProperty.PropType);
   CheckEquals('DefField1', FProtoBufProperty.Name);
@@ -222,11 +212,7 @@ begin
   CheckEquals(0, FProtoBufProperty.PropOptions.Count);
   CheckEquals('', FProtoBufProperty.PropComment);
 
-  iPos := 1;
-  Proto := 'int32 DefField1=1;';
-  // TODO: Setup method call parameters
-  FProtoBufProperty.ParseFromProto(Proto, iPos);
-  // TODO: Validate method results
+  CallParseFromProto('int32 DefField1=1;', FProtoBufProperty);
   CheckTrue(ptDefaultOptional = FProtoBufProperty.PropKind);
   CheckEquals('int32', FProtoBufProperty.PropType);
   CheckEquals('DefField1', FProtoBufProperty.Name);
@@ -234,11 +220,7 @@ begin
   CheckEquals(0, FProtoBufProperty.PropOptions.Count);
   CheckEquals('', FProtoBufProperty.PropComment);
 
-  iPos := 1;
-  Proto := 'optional int32   DefField1  = 1  [default = Val2, packed = true  ]; // def field 1, default value 2';
-  // TODO: Setup method call parameters
-  FProtoBufProperty.ParseFromProto(Proto, iPos);
-  // TODO: Validate method results
+  CallParseFromProto('optional int32   DefField1  = 1  [default = Val2, packed = true  ]; // def field 1, default value 2', FProtoBufProperty);
   CheckTrue(ptOptional = FProtoBufProperty.PropKind);
   CheckEquals('int32', FProtoBufProperty.PropType);
   CheckEquals('DefField1', FProtoBufProperty.Name);
@@ -250,11 +232,7 @@ begin
   CheckEquals('true', FProtoBufProperty.PropOptions[1].OptionValue);
   CheckEquals('def field 1, default value 2', Trim(FProtoBufProperty.PropComment));
 
-  iPos := 1;
-  Proto := 'optional int32   DefField1  = 1  [default = Val2, packed = "true"" value"""'#13#10' ]; // def field 1, default value 2';
-  // TODO: Setup method call parameters
-  FProtoBufProperty.ParseFromProto(Proto, iPos);
-  // TODO: Validate method results
+  CallParseFromProto('optional int32   DefField1  = 1  [default = Val2, packed = "true"" value"""'#13#10' ]; // def field 1, default value 2', FProtoBufProperty);
   CheckTrue(ptOptional = FProtoBufProperty.PropKind);
   CheckEquals('int32', FProtoBufProperty.PropType);
   CheckEquals('DefField1', FProtoBufProperty.Name);
@@ -266,11 +244,7 @@ begin
   CheckEquals('"true"" value"""', FProtoBufProperty.PropOptions[1].OptionValue);
   CheckEquals('def field 1, default value 2', Trim(FProtoBufProperty.PropComment));
 
-  iPos := 1;
-  Proto := 'required   int32   DefField1  = 1  [default = Val2, packed = "true value" ]; // def field 1, default value 2';
-  // TODO: Setup method call parameters
-  FProtoBufProperty.ParseFromProto(Proto, iPos);
-  // TODO: Validate method results
+  CallParseFromProto('required   int32   DefField1  = 1  [default = Val2, packed = "true value" ]; // def field 1, default value 2', FProtoBufProperty);
   CheckTrue(ptRequired = FProtoBufProperty.PropKind);
   CheckEquals('int32', FProtoBufProperty.PropType);
   CheckEquals('DefField1', FProtoBufProperty.Name);
@@ -282,11 +256,7 @@ begin
   CheckEquals('"true value"', FProtoBufProperty.PropOptions[1].OptionValue);
   CheckEquals('def field 1, default value 2', Trim(FProtoBufProperty.PropComment));
 
-  iPos := 1;
-  Proto := 'repeated   string   DefField1  = 1  [default = "Va""l2" , packed = true ]; // def field 1, default value 2';
-  // TODO: Setup method call parameters
-  FProtoBufProperty.ParseFromProto(Proto, iPos);
-  // TODO: Validate method results
+  CallParseFromProto('repeated   string   DefField1  = 1  [default = "Va""l2" , packed = true ]; // def field 1, default value 2', FProtoBufProperty);
   CheckTrue(ptRepeated = FProtoBufProperty.PropKind);
   CheckEquals('string', FProtoBufProperty.PropType);
   CheckEquals('DefField1', FProtoBufProperty.Name);
@@ -517,6 +487,12 @@ begin
   CheckEquals('$000C0000', FProtoBufEnum.GetEnumValueString(2));
 end;
 
+procedure TestTProtoBufMessage.CallParseFromProto(const AProto: string);
+begin
+  FLastiPos:= 1;
+  FProtoBufMessage.ParseFromProto(AProto, FLastiPos);
+end;
+
 procedure TestTProtoBufMessage.SetUp;
 begin
   FProtoBufMessage := TProtoBufMessage.Create(nil);
@@ -529,39 +505,12 @@ begin
 end;
 
 procedure TestTProtoBufMessage.TestParseFromProto;
-var
-  Proto: string;
-  iPos: Integer;
 begin
-  Proto := 'TestMsg0 { required int32 Field1 = 1; required int64 Field2 = 2; }';
-  iPos := 1;
-  FProtoBufMessage.ParseFromProto(Proto, iPos);
+  CallParseFromProto('TestMsg0 { required int32 Field1 = 1; required int64 Field2 = 2; }');
   CheckEquals('TestMsg0', FProtoBufMessage.Name);
   CheckEquals(2, FProtoBufMessage.Count);
   CheckEquals('Field1', FProtoBufMessage[0].Name);
   CheckEquals('Field2', FProtoBufMessage[1].Name);
-end;
-
-procedure TestTProtoBufEnumList.SetUp;
-begin
-  FProtoBufEnumList := TProtoBufEnumList.Create;
-end;
-
-procedure TestTProtoBufEnumList.TearDown;
-begin
-  FProtoBufEnumList.Free;
-  FProtoBufEnumList := nil;
-end;
-
-procedure TestTProtoBufMessageList.SetUp;
-begin
-  FProtoBufMessageList := TProtoBufMessageList.Create;
-end;
-
-procedure TestTProtoBufMessageList.TearDown;
-begin
-  FProtoBufMessageList.Free;
-  FProtoBufMessageList := nil;
 end;
 
 procedure TestTProtoFile.SetUp;
@@ -737,13 +686,12 @@ end;
 
 procedure TestTProtoBufOneOf.TestParseFromProto;
 begin
-  CallParseFromProto('oneof field_oneof { }}', FProtoBufProperty);
+  CallParseFromProto('oneof field_oneof {', FProtoBufProperty);
   CheckTrue(ptOneOf = FProtoBufProperty.PropKind);
   CheckEquals('field_oneof', FProtoBufProperty.PropType);
   CheckEquals('field_oneof', FProtoBufProperty.Name);
   CheckEquals(0, FProtoBufProperty.PropFieldNum); //oneof has no num!
   CheckEquals(0, FProtoBufProperty.PropOptions.Count);
-  CheckEquals('', FProtoBufProperty.PropComment);
 
   CheckException(ParserErrorNameMissing, Exception, 'ParserErrorNameMissing did not raise Exception');
   CheckException(ParserErrorOpenBracketMissing, Exception, 'ParserErrorOpenBracketMissing did not raise Exception');
@@ -758,7 +706,5 @@ initialization
   RegisterTest('Parser', TestTProtoBufEnumValue.Suite);
   RegisterTest('Parser', TestTProtoBufEnum.Suite);
   RegisterTest('Parser', TestTProtoBufMessage.Suite);
-  RegisterTest('Parser', TestTProtoBufEnumList.Suite);
-  RegisterTest('Parser', TestTProtoBufMessageList.Suite);
   RegisterTest('Parser', TestTProtoFile.Suite);
 end.
