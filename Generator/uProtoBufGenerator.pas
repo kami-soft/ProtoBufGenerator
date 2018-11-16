@@ -637,6 +637,14 @@ begin
 end;
 
 procedure TProtoBufGenerator.GenerateInterfaceSection(Proto: TProtoFile; SL: TStrings);
+  procedure WriteBeforeComments(AComments, SL: TStrings; const Indent: string = '  ');
+  var
+    i: Integer;
+  begin
+    for i:= 0 to AComments.Count - 1 do
+      SL.Add(Format('%s//%s', [Indent, AComments[i]]));
+  end;
+
   procedure WriteEnumToSL(ProtoEnum: TProtoBufEnum; SL: TStrings);
   var
     i: Integer;
@@ -645,14 +653,17 @@ procedure TProtoBufGenerator.GenerateInterfaceSection(Proto: TProtoFile; SL: TSt
     if ProtoEnum.IsImported then
       Exit;
 
+    WriteBeforeComments(ProtoEnum.Comments, SL);
     SL.Add(Format('  T%s=(', [ProtoEnum.Name]));
     for i := 0 to ProtoEnum.Count - 1 do
       begin
-        if i < (ProtoEnum.Count - 1) then
-          s := ','
-        else
-          s := '';
-        SL.Add(Format('    %s = %s%s', [ProtoEnum[i].Name, ProtoEnum.GetEnumValueString(i), s]));
+        if ProtoEnum[i].Comments.Count > 1 then
+          WriteBeforeComments(ProtoEnum[i].Comments, SL, '    ');
+        s:= Format('    %s = %s%s', [ProtoEnum[i].Name, ProtoEnum.GetEnumValueString(i),
+          IfThen(i < (ProtoEnum.Count - 1), ',', '')]);
+        if ProtoEnum[i].Comments.Count = 1 then
+          s:= Format('%s  //%s', [s, ProtoEnum[i].Comments[0]]);
+        SL.Add(s);
       end;
     SL.Add('  );');
   end;
@@ -666,6 +677,8 @@ procedure TProtoBufGenerator.GenerateInterfaceSection(Proto: TProtoFile; SL: TSt
   begin
     if ProtoMsg.IsImported then
       Exit;
+
+    WriteBeforeComments(ProtoMsg.Comments, SL);
     if ProtoMsg.ExtendOf = '' then
       s := 'AbstractProtoBufClass'
     else
@@ -743,8 +756,8 @@ procedure TProtoBufGenerator.GenerateInterfaceSection(Proto: TProtoFile; SL: TSt
       begin
         Prop := ProtoMsg[i];
         ParsePropType(Prop, Proto, DelphiProp);
-        if Prop.PropComment <> '' then
-          SL.Add('    //' + Prop.PropComment);
+        for j:= 0 to Prop.Comments.Count - 1 do
+          SL.Add('    //' + Prop.Comments[j]);
         if DelphiProp.readOnlyDelphiProperty then
           begin
             s := Format('    property %s: %s read F%s',
