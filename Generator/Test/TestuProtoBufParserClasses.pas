@@ -76,6 +76,7 @@ type
     procedure TestParseFromProto;
     procedure TestParseFromProtoHexValue;
     procedure TestParseFromProtoErrors;
+    procedure TestComments;
   end;
   // Test methods for class TProtoBufEnum
 
@@ -99,6 +100,7 @@ type
     procedure TestEnumAliasOption;
     procedure TestEnumAliasOptionParserErrors;
     procedure TestParseWithHexadecimals;
+    procedure TestComments;
   end;
   // Test methods for class TProtoBufOne
 
@@ -128,6 +130,8 @@ type
     procedure TearDown; override;
   published
     procedure TestParseFromProto;
+    procedure TestMessageComments;
+    procedure TestOneOfComments;
   end;
   // Test methods for class TProtoFile
 
@@ -199,7 +203,15 @@ begin
   CheckEquals('Field', FProtoBufProperty.Name);
   CheckEquals(1, FProtoBufProperty.PropFieldNum);
   CheckEquals(0, FProtoBufProperty.PropOptions.Count);
-  CheckEquals('with comment', FProtoBufProperty.PropComment);
+  CheckEquals('with comment', FProtoBufProperty.Comments.Text);
+
+  CallParseFromProto('int32 Field = 1; //one comment'#13#10'//this is for the next one', FProtoBufProperty);
+  CheckTrue(ptDefaultOptional = FProtoBufProperty.PropKind);
+  CheckEquals('int32', FProtoBufProperty.PropType);
+  CheckEquals('Field', FProtoBufProperty.Name);
+  CheckEquals(1, FProtoBufProperty.PropFieldNum);
+  CheckEquals(0, FProtoBufProperty.PropOptions.Count);
+  CheckEquals('one comment', FProtoBufProperty.Comments.Text);
 end;
 
 procedure TestTProtoBufProperty.TestParseFromProto;
@@ -210,7 +222,7 @@ begin
   CheckEquals('DefField1', FProtoBufProperty.Name);
   CheckEquals(1, FProtoBufProperty.PropFieldNum);
   CheckEquals(0, FProtoBufProperty.PropOptions.Count);
-  CheckEquals('', FProtoBufProperty.PropComment);
+  CheckEquals('', FProtoBufProperty.Comments.Text);
 
   CallParseFromProto('int32 DefField1=1;', FProtoBufProperty);
   CheckTrue(ptDefaultOptional = FProtoBufProperty.PropKind);
@@ -218,7 +230,7 @@ begin
   CheckEquals('DefField1', FProtoBufProperty.Name);
   CheckEquals(1, FProtoBufProperty.PropFieldNum);
   CheckEquals(0, FProtoBufProperty.PropOptions.Count);
-  CheckEquals('', FProtoBufProperty.PropComment);
+  CheckEquals('', FProtoBufProperty.Comments.Text);
 
   CallParseFromProto('optional int32   DefField1  = 1  [default = Val2, packed = true  ]; // def field 1, default value 2', FProtoBufProperty);
   CheckTrue(ptOptional = FProtoBufProperty.PropKind);
@@ -230,7 +242,7 @@ begin
   CheckEquals('Val2', FProtoBufProperty.PropOptions[0].OptionValue);
   CheckEquals('packed', FProtoBufProperty.PropOptions[1].Name);
   CheckEquals('true', FProtoBufProperty.PropOptions[1].OptionValue);
-  CheckEquals('def field 1, default value 2', Trim(FProtoBufProperty.PropComment));
+  CheckEquals('def field 1, default value 2', FProtoBufProperty.Comments.Text);
 
   CallParseFromProto('optional int32   DefField1  = 1  [default = Val2, packed = "true"" value"""'#13#10' ]; // def field 1, default value 2', FProtoBufProperty);
   CheckTrue(ptOptional = FProtoBufProperty.PropKind);
@@ -242,7 +254,7 @@ begin
   CheckEquals('Val2', FProtoBufProperty.PropOptions[0].OptionValue);
   CheckEquals('packed', FProtoBufProperty.PropOptions[1].Name);
   CheckEquals('"true"" value"""', FProtoBufProperty.PropOptions[1].OptionValue);
-  CheckEquals('def field 1, default value 2', Trim(FProtoBufProperty.PropComment));
+  CheckEquals('def field 1, default value 2', FProtoBufProperty.Comments.Text);
 
   CallParseFromProto('required   int32   DefField1  = 1  [default = Val2, packed = "true value" ]; // def field 1, default value 2', FProtoBufProperty);
   CheckTrue(ptRequired = FProtoBufProperty.PropKind);
@@ -254,7 +266,7 @@ begin
   CheckEquals('Val2', FProtoBufProperty.PropOptions[0].OptionValue);
   CheckEquals('packed', FProtoBufProperty.PropOptions[1].Name);
   CheckEquals('"true value"', FProtoBufProperty.PropOptions[1].OptionValue);
-  CheckEquals('def field 1, default value 2', Trim(FProtoBufProperty.PropComment));
+  CheckEquals('def field 1, default value 2', FProtoBufProperty.Comments.Text);
 
   CallParseFromProto('repeated   string   DefField1  = 1  [default = "Va""l2" , packed = true ]; // def field 1, default value 2', FProtoBufProperty);
   CheckTrue(ptRepeated = FProtoBufProperty.PropKind);
@@ -266,7 +278,7 @@ begin
   CheckEquals('"Va""l2"', FProtoBufProperty.PropOptions[0].OptionValue);
   CheckEquals('packed', FProtoBufProperty.PropOptions[1].Name);
   CheckEquals('true', FProtoBufProperty.PropOptions[1].OptionValue);
-  CheckEquals('def field 1, default value 2', Trim(FProtoBufProperty.PropComment));
+  CheckEquals('def field 1, default value 2', FProtoBufProperty.Comments.Text);
 end;
 
 procedure TestTProtoBufEnumValue.ParserErrorEnumValueEqualsMissing;
@@ -303,6 +315,15 @@ procedure TestTProtoBufEnumValue.TearDown;
 begin
   FProtoBufEnumValue.Free;
   FProtoBufEnumValue := nil;
+end;
+
+procedure TestTProtoBufEnumValue.TestComments;
+begin
+  CallParseFromProto('Enum1 = 1;//after'#13#10'//not for us', FProtoBufEnumValue);
+  CheckEquals('Enum1', FProtoBufEnumValue.Name);
+  CheckEquals(1, FProtoBufEnumValue.Value);
+  CheckFalse(FProtoBufEnumValue.IsHexValue, 'HexValue recognized');
+  CheckEquals('after', FProtoBufEnumValue.Comments.Text);
 end;
 
 procedure TestTProtoBufEnumValue.TestParseFromProto;
@@ -390,6 +411,24 @@ procedure TestTProtoBufEnum.TearDown;
 begin
   FProtoBufEnum.Free;
   FProtoBufEnum := nil;
+end;
+
+procedure TestTProtoBufEnum.TestComments;
+begin
+  CallParseFromProto('Enum1{Val1=1;Val2=2;}//after'#13#10'//not for us');
+  CheckEquals('Enum1', FProtoBufEnum.Name);
+  CheckEquals(2, FProtoBufEnum.Count);
+  CheckEquals('Val1', FProtoBufEnum[0].Name);
+  CheckEquals(1, FProtoBufEnum[0].Value);
+  CheckEquals('Val2', FProtoBufEnum[1].Name);
+  CheckEquals(2, FProtoBufEnum[1].Value);
+  CheckEquals('after', FProtoBufEnum.Comments.Text);
+
+  CallParseFromProto('Enum1{'#13#10'//before'#13#10'Val1=1;Val2=2;}');
+  CheckEquals('Enum1', FProtoBufEnum.Name);
+  CheckEquals('Val1', FProtoBufEnum[0].Name);
+  CheckEquals(1, FProtoBufEnum[0].Value);
+  CheckEquals('before', FProtoBufEnum[0].Comments.Text);
 end;
 
 procedure TestTProtoBufEnum.TestEnumAliasOption;
@@ -502,6 +541,24 @@ procedure TestTProtoBufMessage.TearDown;
 begin
   FProtoBufMessage.Free;
   FProtoBufMessage := nil;
+end;
+
+procedure TestTProtoBufMessage.TestMessageComments;
+begin
+  CallParseFromProto('//before'#13#10'//second'#13#10'TestMsg0 { int32 Field1 = 1;} //after'#13#10'//not for us');
+  CheckEquals('TestMsg0', FProtoBufMessage.Name);
+  CheckEquals(1, FProtoBufMessage.Count);
+  CheckEquals('Field1', FProtoBufMessage[0].Name);
+  CheckEquals('before'#13#10'second'#13#10'after', FProtoBufMessage.Comments.Text);
+end;
+
+procedure TestTProtoBufMessage.TestOneOfComments;
+begin
+  CallParseFromProto('TestMsg0 { '#13#10'//before'#13#10'//second'#13#10'oneof Field1 {} //after'#13#10'}');
+  CheckEquals('TestMsg0', FProtoBufMessage.Name);
+  CheckEquals(1, FProtoBufMessage.Count);
+  CheckEquals('Field1', FProtoBufMessage[0].Name);
+  CheckEquals('before'#13#10'second'#13#10'after', FProtoBufMessage[0].Comments.Text);
 end;
 
 procedure TestTProtoBufMessage.TestParseFromProto;
