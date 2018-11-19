@@ -176,6 +176,7 @@ function TAbstractProtoBufClass.AllRequiredFieldsValid: Boolean;
 var
   i: Integer;
 begin
+  Result := True;
   for i:= 0 to FFieldStates.Count - 1 do
     if FFieldStates.Data[i] * [fsRequired, fsHasValue] = [fsRequired] then
       Exit(False);
