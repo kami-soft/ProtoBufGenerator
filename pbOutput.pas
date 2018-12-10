@@ -20,6 +20,7 @@ type
   TProtoBufOutput = class(TInterfacedObject, IpbMessage)
   private
     FBuffer: TSegmentBuffer;
+    procedure DoWriteRawVarint32(value: integer);
   public
     constructor Create;
     destructor Destroy; override;
@@ -170,6 +171,13 @@ begin
 end;
 
 procedure TProtoBufOutput.writeRawVarint32(value: integer);
+begin
+  if value < 0 then
+    writeRawVarint64(value) else
+    DoWriteRawVarint32(value);
+end;
+
+procedure TProtoBufOutput.DoWriteRawVarint32(value: integer);
 var
   b: ShortInt;
 begin
