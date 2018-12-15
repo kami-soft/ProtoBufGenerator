@@ -30,8 +30,6 @@ type
     procedure SetUp; override;
     procedure TearDown; override;
   published
-    procedure TestZigZag32;
-    procedure TestZigZag64;
     procedure TestGenerate;
     procedure TestGenerateMsgWithBytes;
   end;
@@ -50,31 +48,6 @@ procedure TestTProtoBufGenerator.TearDown;
 begin
   FProtoBufGenerator.Free;
   FProtoBufGenerator := nil;
-end;
-
-procedure TestTProtoBufGenerator.TestZigZag32;
-var
-  i: Integer;
-  sI32: integer;
-begin
-  // TODO: Setup method call parameters
-  i:=3;
-  sI32:=EncodeZigZag32(i);
-  i:=decodeZigZag32(sI32);
-  CheckEquals(3, i);
-
-  // TODO: Validate method results
-end;
-
-procedure TestTProtoBufGenerator.TestZigZag64;
-var
-  i: Int64;
-  sI64: Int64;
-begin
-  i:=3;
-  sI64:=EncodeZigZag64(i);
-  i:=decodeZigZag64(sI64);
-  CheckEquals(3, i);
 end;
 
 procedure TestTProtoBufGenerator.TestGenerate;

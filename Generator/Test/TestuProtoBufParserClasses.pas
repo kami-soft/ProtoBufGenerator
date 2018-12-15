@@ -59,14 +59,21 @@ type
   end;
   // Test methods for class TProtoBufEnumValue
 
-  TestTProtoBufEnumValue = class(TTestCase)
+  TestTProtoBufEnumValue = class(TestTAbstractProtoBufParserItem)
   strict private
     FProtoBufEnumValue: TProtoBufEnumValue;
+
+    procedure ParserErrorEnumValueNameMissing;
+    procedure ParserErrorEnumValueEqualsMissing;
+    procedure ParserErrorEnumValueValueMissing;
+    procedure ParserErrorEnumValueTerminatorMissing;
+    procedure ParserErrorEnumValueStrToIntFailure;
   public
     procedure SetUp; override;
     procedure TearDown; override;
   published
     procedure TestParseFromProto;
+    procedure TestParseFromProtoErrors;
   end;
   // Test methods for class TProtoBufEnum
 
@@ -290,6 +297,31 @@ begin
   CheckEquals('def field 1, default value 2', Trim(FProtoBufProperty.PropComment));
 end;
 
+procedure TestTProtoBufEnumValue.ParserErrorEnumValueEqualsMissing;
+begin
+  CallParseFromProto('Enum1 1;', FProtoBufEnumValue);
+end;
+
+procedure TestTProtoBufEnumValue.ParserErrorEnumValueNameMissing;
+begin
+  CallParseFromProto('= 1;', FProtoBufEnumValue);
+end;
+
+procedure TestTProtoBufEnumValue.ParserErrorEnumValueStrToIntFailure;
+begin
+  CallParseFromProto('Enum1= ThisIsNoInteger', FProtoBufEnumValue);
+end;
+
+procedure TestTProtoBufEnumValue.ParserErrorEnumValueTerminatorMissing;
+begin
+  CallParseFromProto('Enum1= 1', FProtoBufEnumValue);
+end;
+
+procedure TestTProtoBufEnumValue.ParserErrorEnumValueValueMissing;
+begin
+  CallParseFromProto('Enum1= ;', FProtoBufEnumValue);
+end;
+
 procedure TestTProtoBufEnumValue.SetUp;
 begin
   FProtoBufEnumValue := TProtoBufEnumValue.Create(nil);
@@ -302,33 +334,31 @@ begin
 end;
 
 procedure TestTProtoBufEnumValue.TestParseFromProto;
-var
-  Proto: string;
-  iPos: Integer;
 begin
-  Proto := 'Enum1 = 1;';
-  iPos := 1;
-  FProtoBufEnumValue.ParseFromProto(Proto, iPos);
+  CallParseFromProto('Enum1 = 1;', FProtoBufEnumValue);
   CheckEquals('Enum1', FProtoBufEnumValue.Name);
   CheckEquals(1, FProtoBufEnumValue.Value);
 
-  Proto := 'Enum1=1;';
-  iPos := 1;
-  FProtoBufEnumValue.ParseFromProto(Proto, iPos);
+  CallParseFromProto('Enum1=1;', FProtoBufEnumValue);
   CheckEquals('Enum1', FProtoBufEnumValue.Name);
   CheckEquals(1, FProtoBufEnumValue.Value);
 
-  Proto := 'Enum1=1 ;';
-  iPos := 1;
-  FProtoBufEnumValue.ParseFromProto(Proto, iPos);
+  CallParseFromProto('Enum1=1 ;', FProtoBufEnumValue);
   CheckEquals('Enum1', FProtoBufEnumValue.Name);
   CheckEquals(1, FProtoBufEnumValue.Value);
 
-  Proto := '  Enum1 = 1  ;';
-  iPos := 1;
-  FProtoBufEnumValue.ParseFromProto(Proto, iPos);
+  CallParseFromProto('  Enum1 = 1  ;', FProtoBufEnumValue);
   CheckEquals('Enum1', FProtoBufEnumValue.Name);
   CheckEquals(1, FProtoBufEnumValue.Value);
+end;
+
+procedure TestTProtoBufEnumValue.TestParseFromProtoErrors;
+begin
+  CheckException(ParserErrorEnumValueNameMissing, Exception, 'missing enum value name must cause exception');
+  CheckException(ParserErrorEnumValueEqualsMissing, Exception, 'missing equal sign for enum value must cause exception');
+  CheckException(ParserErrorEnumValueValueMissing, Exception, 'missing enum value must cause exception');
+  CheckException(ParserErrorEnumValueTerminatorMissing, Exception, 'missing enum value terminator must cause exception');
+  CheckException(ParserErrorEnumValueStrToIntFailure, Exception, 'incorrect string enum value must cause exception');
 end;
 
 procedure TestTProtoBufEnum.CallParseFromProto(const AProto: string);
@@ -680,14 +710,14 @@ begin
 end;
 
 initialization
-  RegisterTest(TestTProtoBufPropOption.Suite);
-  RegisterTest(TestTProtoBufPropOptions.Suite);
-  RegisterTest(TestTProtoBufProperty.Suite);
-  RegisterTest(TestTProtoBufOneOf.Suite);
-  RegisterTest(TestTProtoBufEnumValue.Suite);
-  RegisterTest(TestTProtoBufEnum.Suite);
-  RegisterTest(TestTProtoBufMessage.Suite);
-  RegisterTest(TestTProtoBufEnumList.Suite);
-  RegisterTest(TestTProtoBufMessageList.Suite);
-  RegisterTest(TestTProtoFile.Suite);
+  RegisterTest('Parser', TestTProtoBufPropOption.Suite);
+  RegisterTest('Parser', TestTProtoBufPropOptions.Suite);
+  RegisterTest('Parser', TestTProtoBufProperty.Suite);
+  RegisterTest('Parser', TestTProtoBufOneOf.Suite);
+  RegisterTest('Parser', TestTProtoBufEnumValue.Suite);
+  RegisterTest('Parser', TestTProtoBufEnum.Suite);
+  RegisterTest('Parser', TestTProtoBufMessage.Suite);
+  RegisterTest('Parser', TestTProtoBufEnumList.Suite);
+  RegisterTest('Parser', TestTProtoBufMessageList.Suite);
+  RegisterTest('Parser', TestTProtoFile.Suite);
 end.

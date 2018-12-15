@@ -10,6 +10,12 @@
 
 unit pbInput;
 
+//define PB_USE_ASSERTS (here or in project settings), to let pbInput do the
+//error checking using Asserts. Warning: if release builds will be compiled
+//with Asserts off, then no runtime error checking for malformed input will
+//be done!
+{.$DEFINE PB_USE_ASSERTS}
+
 interface
 
 uses
@@ -18,6 +24,9 @@ uses
   pbPublic;
 
 type
+  {$IFNDEF PB_USE_ASSERTS}
+  EPBInputException = class(Exception);
+  {$ENDIF}
 
   TProtoBufInput = class;
 
@@ -42,6 +51,9 @@ type
     FLastTag: integer;
     FOwnObject: boolean;
     procedure FreeBuffer;
+    {$IFNDEF PB_USE_ASSERTS}
+    procedure Assert(Condition: Boolean; const AMessage: string = '');
+    {$ENDIF}
   public
     constructor Create; overload;
     constructor Create(buf: PAnsiChar; len: integer; aOwnsObjects: boolean = false); overload;
@@ -78,7 +90,7 @@ type
     function readRawBoolean: boolean;
     // Read a boolean field value
     function readBoolean: boolean;
-    // Read a AnsiString field value
+    // Read a UTF8 string field value
     function readString: string;
     // read bytes field value
     function readBytes: TBytes;
@@ -171,6 +183,14 @@ begin
   inherited;
 end;
 
+{$IFNDEF PB_USE_ASSERTS}
+procedure TProtoBufInput.Assert(Condition: Boolean; const AMessage: string);
+begin
+  if not Condition then
+    raise EPBInputException.Create(AMessage);
+end;
+{$ENDIF}
+
 procedure TProtoBufInput.FreeBuffer;
 begin
   if FOwnObject then
@@ -205,7 +225,7 @@ begin
     WIRETYPE_FIXED32:
       readRawLittleEndian32();
   else
-    raise Exception.Create('InvalidProtocolBufferException.invalidWireType');
+    Assert(False, ProtoBufException + 'TProtoBufInput.skipField: invalidWireType');
   end;
 end;
 
@@ -337,19 +357,11 @@ begin
 end;
 
 function TProtoBufInput.readRawVarint32: integer;
-var
-  tmp: shortint;
-  shift: integer;
 begin
-  shift := -7;
-  result := 0;
-  repeat
-    Inc(shift, 7);
-    // for negative numbers number value may be to 10 byte
-    Assert(shift < 64, ProtoBufException + 'malformed Varint');
-    tmp := readRawByte;
-    result := result or ((tmp and $7F) shl shift);
-  until tmp >= 0;
+  //negative int32s are padded and written as 64bit,
+  //we call readRawVarint64 for all int's as it will
+  //terminate early enough for smaller values
+  Result:= Integer(readRawVarint64);
 end;
 
 function TProtoBufInput.readRawVarint64: int64;
