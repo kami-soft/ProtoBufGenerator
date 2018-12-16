@@ -73,6 +73,7 @@ type
     procedure TearDown; override;
   published
     procedure TestParseFromProto;
+    procedure TestParseFromProtoHexValue;
     procedure TestParseFromProtoErrors;
   end;
   // Test methods for class TProtoBufEnum
@@ -96,6 +97,7 @@ type
     procedure TestParseFromProto;
     procedure TestEnumAliasOption;
     procedure TestEnumAliasOptionParserErrors;
+    procedure TestParseWithHexadecimals;
   end;
   // Test methods for class TProtoBufOne
 
@@ -338,18 +340,22 @@ begin
   CallParseFromProto('Enum1 = 1;', FProtoBufEnumValue);
   CheckEquals('Enum1', FProtoBufEnumValue.Name);
   CheckEquals(1, FProtoBufEnumValue.Value);
+  CheckFalse(FProtoBufEnumValue.IsHexValue, 'HexValue recognized');
 
   CallParseFromProto('Enum1=1;', FProtoBufEnumValue);
   CheckEquals('Enum1', FProtoBufEnumValue.Name);
   CheckEquals(1, FProtoBufEnumValue.Value);
+  CheckFalse(FProtoBufEnumValue.IsHexValue, 'HexValue recognized');
 
   CallParseFromProto('Enum1=1 ;', FProtoBufEnumValue);
   CheckEquals('Enum1', FProtoBufEnumValue.Name);
   CheckEquals(1, FProtoBufEnumValue.Value);
+  CheckFalse(FProtoBufEnumValue.IsHexValue, 'HexValue recognized');
 
   CallParseFromProto('  Enum1 = 1  ;', FProtoBufEnumValue);
   CheckEquals('Enum1', FProtoBufEnumValue.Name);
   CheckEquals(1, FProtoBufEnumValue.Value);
+  CheckFalse(FProtoBufEnumValue.IsHexValue, 'HexValue recognized');
 end;
 
 procedure TestTProtoBufEnumValue.TestParseFromProtoErrors;
@@ -359,6 +365,19 @@ begin
   CheckException(ParserErrorEnumValueValueMissing, Exception, 'missing enum value must cause exception');
   CheckException(ParserErrorEnumValueTerminatorMissing, Exception, 'missing enum value terminator must cause exception');
   CheckException(ParserErrorEnumValueStrToIntFailure, Exception, 'incorrect string enum value must cause exception');
+end;
+
+procedure TestTProtoBufEnumValue.TestParseFromProtoHexValue;
+begin
+  CallParseFromProto('Enum1 = 0x02;', FProtoBufEnumValue);
+  CheckEquals('Enum1', FProtoBufEnumValue.Name);
+  CheckEquals($02, FProtoBufEnumValue.Value);
+  Check(FProtoBufEnumValue.IsHexValue, 'HexValue not recognized');
+
+  CallParseFromProto('Enum1 = 0xABCD  ;', FProtoBufEnumValue);
+  CheckEquals('Enum1', FProtoBufEnumValue.Name);
+  CheckEquals($ABCD, FProtoBufEnumValue.Value);
+  Check(FProtoBufEnumValue.IsHexValue, 'HexValue not recognized');
 end;
 
 procedure TestTProtoBufEnum.CallParseFromProto(const AProto: string);
@@ -474,6 +493,28 @@ begin
   CheckEquals(1, FProtoBufEnum[0].Value);
   CheckEquals('Val2', FProtoBufEnum[1].Name);
   CheckEquals(2, FProtoBufEnum[1].Value);
+end;
+
+procedure TestTProtoBufEnum.TestParseWithHexadecimals;
+begin
+  CallParseFromProto('EnumFlags{'#13#10'  flag1 = 0x01; '#13#10'  flagMask= 0xFFFF ;'#13#10'  flag0C = 0xC0000 ;'#13#10'  }');
+  CheckEquals('EnumFlags', FProtoBufEnum.Name);
+  CheckEquals(3, FProtoBufEnum.Count);
+
+  CheckEquals('flag1', FProtoBufEnum[0].Name);
+  CheckEquals($1, FProtoBufEnum[0].Value);
+  Check(FProtoBufEnum[0].IsHexValue);
+  CheckEquals('$00000001', FProtoBufEnum.GetEnumValueString(0));
+
+  CheckEquals('flagMask', FProtoBufEnum[1].Name);
+  CheckEquals($FFFF, FProtoBufEnum[1].Value);
+  Check(FProtoBufEnum[1].IsHexValue);
+  CheckEquals('$0000FFFF', FProtoBufEnum.GetEnumValueString(1));
+
+  CheckEquals('flag0C', FProtoBufEnum[2].Name);
+  CheckEquals($C0000, FProtoBufEnum[2].Value);
+  Check(FProtoBufEnum[2].IsHexValue);
+  CheckEquals('$000C0000', FProtoBufEnum.GetEnumValueString(2));
 end;
 
 procedure TestTProtoBufMessage.SetUp;
