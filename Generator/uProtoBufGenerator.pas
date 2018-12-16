@@ -651,7 +651,7 @@ procedure TProtoBufGenerator.GenerateInterfaceSection(Proto: TProtoFile; SL: TSt
           s := ','
         else
           s := '';
-        SL.Add(Format('    %s = %d%s', [ProtoEnum[i].Name, ProtoEnum[i].Value, s]));
+        SL.Add(Format('    %s = %s%s', [ProtoEnum[i].Name, ProtoEnum.GetEnumValueString(i), s]));
       end;
     SL.Add('  );');
   end;
