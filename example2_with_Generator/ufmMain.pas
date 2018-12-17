@@ -104,6 +104,7 @@ begin
       TestMsg1.DefField1 := 20;
       TestMsg1.DefField9 := 1.5;
       TestMsg1.FieldArr1List.Add(743);
+      TestMsg1.FieldHasValue[TTestMsg1.tag_FieldArr1List]:= True;
       TestMsg1.FieldImp1 := gVal1;
 
       // and now save data
@@ -139,6 +140,8 @@ procedure TForm15.btnSpeedTestClick(Sender: TObject);
   var
     i: Integer;
   begin
+    msg.FieldHasValue[TTestMsg1.tag_FieldArr3List]:= True;
+    msg.FieldHasValue[TTestMsg1.tag_FieldArr1List]:= True;
     for i := 0 to 9999 do
       begin
         msg.FieldArr3List.Add('foo some long-long value '+IntToStr(i));
