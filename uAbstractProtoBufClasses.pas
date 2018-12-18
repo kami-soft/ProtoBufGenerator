@@ -1,12 +1,15 @@
 unit uAbstractProtoBufClasses;
-
+
 interface
 
 uses
-  Windows,
   SysUtils,
   Classes,
+  {$IFDEF FPC}
+  fgl,
+  {$ELSE}
   System.Generics.Collections,
+  {$ENDIF}
   pbInput,
   pbOutput;
 
@@ -16,7 +19,11 @@ type
   TAbstractProtoBufClass = class(TObject)
   strict private
   type
+    {$IFDEF FPC}
+    TFieldStates = TFPGMap<Integer, TFieldState>;
+    {$ELSE}
     TFieldStates = TDictionary<integer, TFieldState>;
+    {$ENDIF}
   strict private
     FFieldStates: TFieldStates;
     function GetFieldState(Tag: Integer): TFieldState;
@@ -51,7 +58,11 @@ type
     property FieldHasValue[Tag: Integer]: Boolean read GetFieldHasValue write SetFieldHasValue;
   end;
 
+  {$IFDEF FPC}
+  TProtoBufClassList<T: TAbstractProtoBufClass> = class(TFPGObjectList<T>)
+  {$ELSE}
   TProtoBufClassList<T: TAbstractProtoBufClass, constructor> = class(TObjectList<T>)
+  {$ENDIF}
   public
     function AddFromBuf(ProtoBuf: TProtoBufInput; FieldNum: integer): Boolean; virtual;
     procedure SaveToBuf(ProtoBuf: TProtoBufOutput; FieldNumForItems: integer); virtual;
@@ -65,15 +76,28 @@ uses
 { TAbstractProtoBufClass }
 
 function TAbstractProtoBufClass.GetFieldState(Tag: Integer): TFieldState;
+{$IFDEF FPC}
+var
+  idx: Integer;
+begin
+  if FFieldStates.Find(Tag, idx) then
+    Result:= FFieldStates.Data[idx] else
+    Result:= [];
+{$ELSE}
 begin
   Result:= [];
   FFieldStates.TryGetValue(Tag, Result);
+{$ENDIF}
 end;
 
 procedure TAbstractProtoBufClass.AddFieldState(Tag: integer;
   AFieldState: TFieldState);
 begin
+{$IFDEF FPC}
+  FFieldStates[Tag]:= GetFieldState(Tag) + AFieldState;
+{$ELSE}
   FFieldStates.AddOrSetValue(Tag, GetFieldState(Tag) + AFieldState);
+{$ENDIF}
 end;
 
 procedure TAbstractProtoBufClass.AddLoadedField(Tag: integer);
@@ -101,24 +125,39 @@ begin
 end;
 
 procedure TAbstractProtoBufClass.BeforeLoad;
+{$IFDEF FPC}
+var
+  i: Integer;
+begin
+  for i:= 0 to FFieldStates.Count - 1 do
+    FFieldStates.Data[i]:= FFieldStates.Data[i] - [fsHasValue];
+{$ELSE}
 var
   pair: TPair<integer, TFieldState>;
 begin
   //clear HasValue flags
   for pair in FFieldStates do
     FFieldStates.Items[pair.Key]:= pair.Value - [fsHasValue];
+{$ENDIF}
 end;
 
 procedure TAbstractProtoBufClass.ClearFieldState(Tag: Integer;
   AFieldState: TFieldState);
 begin
+{$IFDEF FPC}
+  FFieldStates[Tag]:= GetFieldState(Tag);
+{$ELSE}
   FFieldStates.AddOrSetValue(Tag, GetFieldState(Tag) - AFieldState);
+{$ENDIF}
 end;
 
 constructor TAbstractProtoBufClass.Create;
 begin
   inherited Create;
   FFieldStates:= TFieldStates.Create;
+  {$IFDEF FPC}
+  FFieldStates.Sorted:= True;
+  {$ENDIF}
 end;
 
 destructor TAbstractProtoBufClass.Destroy;
@@ -133,6 +172,15 @@ begin
 end;
 
 function TAbstractProtoBufClass.AllRequiredFieldsValid: Boolean;
+{$IFDEF FPC}
+var
+  i: Integer;
+begin
+  Result := True;
+  for i:= 0 to FFieldStates.Count - 1 do
+    if FFieldStates.Data[i] * [fsRequired, fsHasValue] = [fsRequired] then
+      Exit(False);
+{$ELSE}
 var
   state: TFieldState;
 begin
@@ -143,6 +191,7 @@ begin
       Result:= False;
       Break;
     end;
+{$ENDIF}
 end;
 
 procedure TAbstractProtoBufClass.LoadFromBuf(ProtoBuf: TProtoBufInput);

@@ -207,13 +207,13 @@ end;
 
 class procedure TSegmentBuffer.Error(const Msg: string; Data: Integer);
 
-  function ReturnAddr: Pointer;
+  {function ReturnAddr: Pointer;
   asm
     MOV     EAX,[EBP+4]
-  end;
+  end;}
 
   begin
-    raise EListError.CreateFmt(Msg, [Data])at ReturnAddr;
+    raise EListError.CreateFmt(Msg, [Data]);// at ReturnAddr;
   end;
 
 constructor TSegmentBuffer.Create;

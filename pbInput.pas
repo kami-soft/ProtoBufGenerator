@@ -49,20 +49,21 @@ type
     FSizeLimit: integer;
     FRecursionDepth: integer;
     FLastTag: integer;
-    FOwnObject: boolean;
+    FOwnBuffer: Boolean;
     procedure FreeBuffer;
     {$IFNDEF PB_USE_ASSERTS}
     procedure Assert(Condition: Boolean; const AMessage: string = '');
     {$ENDIF}
   public
     constructor Create; overload;
-    constructor Create(buf: PAnsiChar; len: integer; aOwnsObjects: boolean = false); overload;
+    constructor Create(buf: PAnsiChar; len: Integer; ACopyBuffer: Boolean = False); overload;
     destructor Destroy; override;
     // I/O routines to file and stream
     procedure SaveToStream(Stream: TStream);
     procedure SaveToFile(const FileName: string);
     procedure LoadFromFile(const FileName: string);
     procedure LoadFromStream(Stream: TStream);
+    procedure LoadFromBuf(buf: PAnsiChar; len: Integer; ACopyBuffer: Boolean = False);
     // Get buffer posititon
     function getPos: integer;
     // Attempt to read a field tag, returning zero if we have reached EOF.
@@ -158,23 +159,10 @@ begin
   FRecursionDepth := DEFAULT_RECURSION_LIMIT;
 end;
 
-constructor TProtoBufInput.Create(buf: PAnsiChar; len: integer; aOwnsObjects: boolean);
+constructor TProtoBufInput.Create(buf: PAnsiChar; len: integer; ACopyBuffer: boolean);
 begin
   Create;
-
-  FreeBuffer;
-
-  if not aOwnsObjects then
-    FBuffer := buf
-  else
-    begin
-      // allocate a buffer and copy the data
-      FBuffer := AllocMem(len);
-      Move(buf^, FBuffer^, len);
-    end;
-  FPos := 0;
-  FLen := len;
-  FOwnObject := aOwnsObjects;
+  LoadFromBuf(buf, len, ACopyBuffer);
 end;
 
 destructor TProtoBufInput.Destroy;
@@ -193,7 +181,7 @@ end;
 
 procedure TProtoBufInput.FreeBuffer;
 begin
-  if FOwnObject then
+  if FOwnBuffer then
     FreeMem(FBuffer);
   FBuffer := nil;
 end;
@@ -303,14 +291,14 @@ end;
 
 function TProtoBufInput.ReadSubProtoBufInput: TProtoBufInput;
 var
-  BufSize: integer;
+  lBufSize: integer;
   buf: Pointer;
 begin
-  BufSize := readInt32;
-  buf := AllocMem(BufSize);
+  lBufSize := readInt32;
+  buf := AllocMem(lBufSize);
   try
-    readRawBytes(buf^, BufSize);
-    result := TProtoBufInput.Create(buf, BufSize, true);
+    readRawBytes(buf^, lBufSize);
+    result := TProtoBufInput.Create(buf, lBufSize, true);
   finally
     FreeMem(buf);
   end;
@@ -434,6 +422,23 @@ begin
   Stream.WriteBuffer(Pointer(FBuffer)^, FLen);
 end;
 
+procedure TProtoBufInput.LoadFromBuf(buf: PAnsiChar; len: Integer;
+  ACopyBuffer: Boolean);
+begin
+  FreeBuffer;
+
+  if ACopyBuffer then
+    begin
+      // allocate a buffer and copy the data
+      FBuffer := AllocMem(len);
+      Move(buf^, FBuffer^, len);
+    end else
+      FBuffer := buf;
+  FPos := 0;
+  FLen := len;
+  FOwnBuffer := ACopyBuffer;
+end;
+
 procedure TProtoBufInput.LoadFromFile(const FileName: string);
 var
   Stream: TStream;
@@ -450,8 +455,9 @@ procedure TProtoBufInput.LoadFromStream(Stream: TStream);
 begin
   FreeBuffer;
 
-  FOwnObject := true;
+  FOwnBuffer := true;
   FLen := Stream.size;
+  FPos := 0;
   FBuffer := AllocMem(FLen);
   Stream.Position := 0;
   Stream.Read(FBuffer^, FLen);
