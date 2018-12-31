@@ -74,10 +74,10 @@ begin
   CheckEquals(-1, decodeZigZag32(1));
   CheckEquals(1, decodeZigZag32(2));
   CheckEquals(-2, decodeZigZag32(3));
-  CheckEquals(integer($3FFFFFFF), decodeZigZag32($7FFFFFFE));
-  CheckEquals(integer($C0000000), decodeZigZag32($7FFFFFFF));
-  CheckEquals(integer($7FFFFFFF), decodeZigZag32(integer($FFFFFFFE)));
-  CheckEquals(integer($80000000), decodeZigZag32(integer($FFFFFFFF)));
+  CheckEquals(Integer($3FFFFFFF), decodeZigZag32($7FFFFFFE));
+  CheckEquals(Integer($C0000000), decodeZigZag32($7FFFFFFF));
+  CheckEquals(Integer($7FFFFFFF), decodeZigZag32(Integer($FFFFFFFE)));
+  CheckEquals(Integer($80000000), decodeZigZag32(Integer($FFFFFFFF)));
   (* 64 *)
   CheckEquals(0, decodeZigZag64(0));
   CheckEquals(-1, decodeZigZag64(1));
@@ -93,8 +93,8 @@ end;
 
 procedure TestProtoBufRawIO.TestEncodeDecodeZigZag;
 var
-  i: integer;
-  j: integer;
+  i: Integer;
+  j: Integer;
 
   i64: Int64;
   j64: Int64;
@@ -129,9 +129,9 @@ const
   Mb = 1024 * 1024;
 var
   in_pb: TProtoBufInput;
-  buf_size: integer;
+  buf_size: Integer;
   s: AnsiString;
-  i: integer;
+  i: Integer;
 begin
   buf_size := 64 * Mb;
   SetLength(s, buf_size);
@@ -149,21 +149,21 @@ var
   outputString: AnsiString;
   in_pb: TProtoBufInput;
 begin
-  Bytes:= TBytes.Create($04, $20, $00, $FF, $C0);
+  Bytes := TBytes.Create($04, $20, $00, $FF, $C0);
 
-  out_pb:= TProtoBufOutput.Create;
+  out_pb := TProtoBufOutput.Create;
   try
     out_pb.writeBytes(1, Bytes);
 
-    outputString:= out_pb.GetText;
+    outputString := out_pb.GetText;
   finally
     out_pb.Free;
   end;
 
-  in_pb:= TProtoBufInput.Create(@outputString[1], Length(outputString), True);
+  in_pb := TProtoBufInput.Create(@outputString[1], Length(outputString), True);
   try
     in_pb.readTag;
-    BytesRead:= in_pb.readBytes;
+    BytesRead := in_pb.readBytes;
     CheckEquals(Length(Bytes), Length(BytesRead), 'Bytes length mismatch');
     Check(CompareMem(@Bytes[0], @BytesRead[0], Length(BytesRead)));
   finally
@@ -180,27 +180,26 @@ end;
 procedure TestProtoBufRawIO.TestReadLittleEndian32;
 type
   TLittleEndianCase = record
-    bytes: array [1 .. 4] of byte; // Encoded bytes.
-    value: integer; // Parsed value.
+    Bytes: array [1 .. 4] of byte; // Encoded bytes.
+    value: Integer; // Parsed value.
   end;
 const
-  LittleEndianCases: array [0 .. 5] of TLittleEndianCase = ((bytes: ($78, $56, $34, $12); value: $12345678),
-    (bytes: ($F0, $DE, $BC, $9A); value: integer($9ABCDEF0)), (bytes: ($FF, $00, $00, $00); value: 255),
-    (bytes: ($FF, $FF, $00, $00); value: 65535), (bytes: ($4E, $61, $BC, $00); value: 12345678),
-    (bytes: ($B2, $9E, $43, $FF); value: - 12345678));
+  LittleEndianCases: array [0 .. 5] of TLittleEndianCase = ((Bytes: ($78, $56, $34, $12); value: $12345678), (Bytes: ($F0, $DE, $BC, $9A); value: Integer($9ABCDEF0)),
+    (Bytes: ($FF, $00, $00, $00); value: 255), (Bytes: ($FF, $FF, $00, $00); value: 65535), (Bytes: ($4E, $61, $BC, $00); value: 12345678), (Bytes: ($B2, $9E, $43, $FF);
+    value: - 12345678));
 var
-  i, j: integer;
+  i, j: Integer;
   t: TLittleEndianCase;
   pb: TProtoBufInput;
   buf: AnsiString;
-  int: integer;
+  int: Integer;
 begin
   for i := 0 to 5 do
     begin
       t := LittleEndianCases[i];
       SetLength(buf, 4);
       for j := 1 to 4 do
-        buf[j] := AnsiChar(t.bytes[j]);
+        buf[j] := AnsiChar(t.Bytes[j]);
       pb := TProtoBufInput.Create(@buf[1], 4);
       try
         int := pb.readRawLittleEndian32;
@@ -214,16 +213,15 @@ end;
 procedure TestProtoBufRawIO.TestReadLittleEndian64;
 type
   TLittleEndianCase = record
-    bytes: array [1 .. 8] of byte; // Encoded bytes.
+    Bytes: array [1 .. 8] of byte; // Encoded bytes.
     value: Int64; // Parsed value.
   end;
 const
-  LittleEndianCases: array [0 .. 3] of TLittleEndianCase = ((bytes: ($67, $45, $23, $01, $78, $56, $34, $12);
-    value: $1234567801234567), (bytes: ($F0, $DE, $BC, $9A, $78, $56, $34, $12); value: $123456789ABCDEF0),
-    (bytes: ($79, $DF, $0D, $86, $48, $70, $00, $00); value: 123456789012345),
-    (bytes: ($87, $20, $F2, $79, $B7, $8F, $FF, $FF); value: - 123456789012345));
+  LittleEndianCases: array [0 .. 3] of TLittleEndianCase = ((Bytes: ($67, $45, $23, $01, $78, $56, $34, $12); value: $1234567801234567),
+    (Bytes: ($F0, $DE, $BC, $9A, $78, $56, $34, $12); value: $123456789ABCDEF0), (Bytes: ($79, $DF, $0D, $86, $48, $70, $00, $00); value: 123456789012345),
+    (Bytes: ($87, $20, $F2, $79, $B7, $8F, $FF, $FF); value: - 123456789012345));
 var
-  i, j: integer;
+  i, j: Integer;
   t: TLittleEndianCase;
   pb: TProtoBufInput;
   buf: AnsiString;
@@ -234,7 +232,7 @@ begin
       t := LittleEndianCases[i];
       SetLength(buf, 8);
       for j := 1 to 8 do
-        buf[j] := AnsiChar(t.bytes[j]);
+        buf[j] := AnsiChar(t.Bytes[j]);
       pb := TProtoBufInput.Create(@buf[1], 8);
       try
         int := pb.readRawLittleEndian64;
@@ -247,36 +245,31 @@ end;
 
 procedure TestProtoBufRawIO.TestReadString;
 const
-  TestStrings: array[1..5] of string = (
-    'Тестовая строка',
-    'Überläuferspaß',
-    '测试消息',
-    'ItMightNotGetLoudButRatherLongerThanExpectedUsingCamelCase',
-    'MultilineString'#13#10'Even with unix style line ending '#10'We''ll see: ©µ@'
-    );
+  TestStrings: array [1 .. 5] of string = ('Тестовая строка', 'Überläuferspaß', '测试消息', 'ItMightNotGetLoudButRatherLongerThanExpectedUsingCamelCase',
+    'MultilineString'#13#10'Even with unix style line ending '#10'We''ll see: ©µ@');
 var
   out_pb: TProtoBufOutput;
   outputString: AnsiString;
   in_pb: TProtoBufInput;
   i: Integer;
 begin
-  out_pb:= TProtoBufOutput.Create;
+  out_pb := TProtoBufOutput.Create;
   try
-    for i:= Low(TestStrings) to High(TestStrings) do
+    for i := Low(TestStrings) to High(TestStrings) do
       out_pb.writeString(i, TestStrings[i]);
 
-    outputString:= out_pb.GetText;
+    outputString := out_pb.GetText;
   finally
     out_pb.Free;
   end;
 
-  in_pb:= TProtoBufInput.Create(@outputString[1], Length(outputString), True);
+  in_pb := TProtoBufInput.Create(@outputString[1], Length(outputString), True);
   try
-    for i:= Low(TestStrings) to High(TestStrings) do
-    begin
-      CheckEquals(makeTag(i, WIRETYPE_LENGTH_DELIMITED), in_pb.readTag, 'Unexpected tag');
-      CheckEquals(TestStrings[i], in_pb.readString);
-    end;
+    for i := Low(TestStrings) to High(TestStrings) do
+      begin
+        CheckEquals(makeTag(i, WIRETYPE_LENGTH_DELIMITED), in_pb.readTag, 'Unexpected tag');
+        CheckEquals(TestStrings[i], in_pb.readString);
+      end;
   finally
     in_pb.Free;
   end;
@@ -297,54 +290,62 @@ const
 var
   out_pb: TProtoBufOutput;
   in_pb: TProtoBufInput;
-  tag, t: integer;
+  tag, t: Integer;
   text: string;
-  int: integer;
+  int: Integer;
   dbl: double;
   flt: single;
 begin
   out_pb := TProtoBufOutput.Create;
-  out_pb.writeString(1, TEST_string);
-  out_pb.writeFixed32(2, TEST_integer);
-  out_pb.writeFloat(3, TEST_single);
-  out_pb.writeDouble(4, TEST_double);
-  out_pb.SaveToFile('test.dmp');
+  try
+    out_pb.writeString(1, TEST_string);
+    out_pb.writeFixed32(2, TEST_integer);
+    out_pb.writeFloat(3, TEST_single);
+    out_pb.writeDouble(4, TEST_double);
+    out_pb.SaveToFile('test.dmp');
+  finally
+    out_pb.Free;
+  end;
 
   in_pb := TProtoBufInput.Create();
-  in_pb.LoadFromFile('test.dmp');
-  // TEST_string
-  tag := makeTag(1, WIRETYPE_LENGTH_DELIMITED);
-  t := in_pb.readTag;
-  CheckEquals(tag, t);
-  text := in_pb.readString;
-  CheckEquals(TEST_string, text);
-  // TEST_integer
-  tag := makeTag(2, WIRETYPE_FIXED32);
-  t := in_pb.readTag;
-  CheckEquals(tag, t);
-  int := in_pb.readFixed32;
-  CheckEquals(TEST_integer, int);
-  // TEST_single
-  tag := makeTag(3, WIRETYPE_FIXED32);
-  t := in_pb.readTag;
-  CheckEquals(tag, t);
-  flt := in_pb.readFloat;
-  CheckEquals(TEST_single, flt, 0.001);
-  // TEST_double
-  tag := makeTag(4, WIRETYPE_FIXED64);
-  t := in_pb.readTag;
-  CheckEquals(tag, t);
-  dbl := in_pb.readDouble;
-  CheckEquals(TEST_double, dbl, 0.000001);
+  try
+    in_pb.LoadFromFile('test.dmp');
+    // TEST_string
+    tag := makeTag(1, WIRETYPE_LENGTH_DELIMITED);
+    t := in_pb.readTag;
+    CheckEquals(tag, t);
+    text := in_pb.readString;
+    CheckEquals(TEST_string, text);
+    // TEST_integer
+    tag := makeTag(2, WIRETYPE_FIXED32);
+    t := in_pb.readTag;
+    CheckEquals(tag, t);
+    int := in_pb.readFixed32;
+    CheckEquals(TEST_integer, int);
+    // TEST_single
+    tag := makeTag(3, WIRETYPE_FIXED32);
+    t := in_pb.readTag;
+    CheckEquals(tag, t);
+    flt := in_pb.readFloat;
+    CheckEquals(TEST_single, flt, 0.001);
+    // TEST_double
+    tag := makeTag(4, WIRETYPE_FIXED64);
+    t := in_pb.readTag;
+    CheckEquals(tag, t);
+    dbl := in_pb.readDouble;
+    CheckEquals(TEST_double, dbl, 0.000001);
+  finally
+    in_pb.Free;
+  end;
 end;
 
 procedure TestProtoBufRawIO.TestReadTag;
 var
   out_pb: TProtoBufOutput;
   in_pb: TProtoBufInput;
-  tag, t: integer;
+  tag, t: Integer;
   tmp: TMemoryStream;
-  data_size: integer;
+  data_size: Integer;
   garbage: Cardinal;
 begin
   tmp := TMemoryStream.Create;
@@ -383,23 +384,23 @@ var
   outputString: AnsiString;
   i: Integer;
 begin
-  out_pb:= TProtoBufOutput.Create;
+  out_pb := TProtoBufOutput.Create;
   try
     out_pb.writeString(1, 'TestString');
 
-    outputString:= out_pb.GetText;
+    outputString := out_pb.GetText;
   finally
     out_pb.Free;
   end;
 
-  in_pb:= TProtoBufInput.Create;
+  in_pb := TProtoBufInput.Create;
   try
-    for i:= 1 to 2 do
-    begin
-      in_pb.LoadFromBuf(@outputString[1], Length(outputString));
-      in_pb.readTag; //value of no interest here
-      CheckEquals('TestString', in_pb.readString, Format('string mismatch, trial %d', [i]));
-    end;
+    for i := 1 to 2 do
+      begin
+        in_pb.LoadFromBuf(@outputString[1], Length(outputString));
+        in_pb.readTag; // value of no interest here
+        CheckEquals('TestString', in_pb.readString, Format('string mismatch, trial %d', [i]));
+      end;
   finally
     in_pb.Free;
   end;
@@ -412,9 +413,9 @@ var
   ms: TMemoryStream;
   i: Integer;
 begin
-  ms:= TMemoryStream.Create;
+  ms := TMemoryStream.Create;
   try
-    out_pb:= TProtoBufOutput.Create;
+    out_pb := TProtoBufOutput.Create;
     try
       out_pb.writeString(1, 'TestString');
 
@@ -423,14 +424,14 @@ begin
       out_pb.Free;
     end;
 
-    in_pb:= TProtoBufInput.Create;
+    in_pb := TProtoBufInput.Create;
     try
-      for i:= 1 to 2 do
-      begin
-        in_pb.LoadFromStream(ms);
-        in_pb.readTag; //value of no interest here
-        CheckEquals('TestString', in_pb.readString, Format('string mismatch, trial %d', [i]));
-      end;
+      for i := 1 to 2 do
+        begin
+          in_pb.LoadFromStream(ms);
+          in_pb.readTag; // value of no interest here
+          CheckEquals('TestString', in_pb.readString, Format('string mismatch, trial %d', [i]));
+        end;
     finally
       in_pb.Free;
     end;
@@ -442,73 +443,70 @@ end;
 procedure TestProtoBufRawIO.TestVarint;
 type
   TVarintCaseOptions = set of (vcoIs64, vcoSkipOutputCheck);
+
   TVarintCase = record
-    bytes: array [1 .. 10] of byte; // Encoded bytes.
-    Size: integer; // Encoded size, in bytes.
+    Bytes: array [1 .. 10] of byte; // Encoded bytes.
+    Size: Integer; // Encoded size, in bytes.
     value: Int64; // Parsed value.
     Options: TVarintCaseOptions;
   end;
 const
   VarintCases: array [1 .. 17] of TVarintCase = (
     // 32-bit values
-    (bytes: ($00, $00, $00, $00, $00, $00, $00, $00, $00, $00); Size: 1; value: 0; Options: []),
-    (bytes: ($01, $00, $00, $00, $00, $00, $00, $00, $00, $00); Size: 1; value: 1; Options: []),
-    (bytes: ($7F, $00, $00, $00, $00, $00, $00, $00, $00, $00); Size: 1; value: 127; Options: []),
-    (bytes: ($A2, $74, $00, $00, $00, $00, $00, $00, $00, $00); Size: 2; value: 14882; Options: []),
-    (bytes: ($FF, $FF, $FF, $FF, $07, $00, $00, $00, $00, $00); Size: 5; value: MaxLongInt; Options: []),
-    (bytes: ($FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $01); Size: 10; value: -1; Options: []),
-    (bytes: ($D5, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $01); Size: 10; value: -43; Options: []),
-    (bytes: ($81, $FE, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $01); Size: 10; value: -255; Options: []),
-    (bytes: ($B7, $81, $FC, $FF, $FF, $FF, $FF, $FF, $FF, $01); Size: 10; value: -65353; Options: []),
-    (bytes: ($80, $80, $80, $80, $F8, $FF, $FF, $FF, $FF, $01); Size: 10; value: -2147483648; Options: []),
+    (Bytes: ($00, $00, $00, $00, $00, $00, $00, $00, $00, $00); Size: 1; value: 0; Options: []), (Bytes: ($01, $00, $00, $00, $00, $00, $00, $00, $00, $00); Size: 1; value: 1;
+    Options: []), (Bytes: ($7F, $00, $00, $00, $00, $00, $00, $00, $00, $00); Size: 1; value: 127; Options: []), (Bytes: ($A2, $74, $00, $00, $00, $00, $00, $00, $00, $00);
+    Size: 2; value: 14882; Options: []), (Bytes: ($FF, $FF, $FF, $FF, $07, $00, $00, $00, $00, $00); Size: 5; value: MaxLongInt; Options: []),
+    (Bytes: ($FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $01); Size: 10; value: - 1; Options: []), (Bytes: ($D5, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $01); Size: 10;
+    value: - 43; Options: []), (Bytes: ($81, $FE, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $01); Size: 10; value: - 255; Options: []),
+    (Bytes: ($B7, $81, $FC, $FF, $FF, $FF, $FF, $FF, $FF, $01); Size: 10; value: - 65353; Options: []), (Bytes: ($80, $80, $80, $80, $F8, $FF, $FF, $FF, $FF, $01); Size: 10;
+    value: - 2147483648; Options: []),
     // 32-bit values that are not padded to 64bit, make sure we can read them,
     // but don't compare our output, as it will have lenth 10, since we pad correctly
-    (bytes: ($FF, $FF, $FF, $FF, $0F, $00, $00, $00, $00, $00); Size: 5; value: -1; Options: [vcoSkipOutputCheck]),
-    (bytes: ($81, $FE, $FF, $FF, $0F, $00, $00, $00, $00, $00); Size: 5; value: -255; Options: [vcoSkipOutputCheck]),
-    (bytes: ($B7, $81, $FC, $FF, $0F, $00, $00, $00, $00, $00); Size: 5; value: -65353; Options: [vcoSkipOutputCheck]),
-    (bytes: ($80, $80, $80, $80, $08, $00, $00, $00, $00, $00); Size: 5; value: -2147483648; Options: [vcoSkipOutputCheck]),
+    (Bytes: ($FF, $FF, $FF, $FF, $0F, $00, $00, $00, $00, $00); Size: 5; value: - 1; Options: [vcoSkipOutputCheck]), (Bytes: ($81, $FE, $FF, $FF, $0F, $00, $00, $00, $00, $00);
+    Size: 5; value: - 255; Options: [vcoSkipOutputCheck]), (Bytes: ($B7, $81, $FC, $FF, $0F, $00, $00, $00, $00, $00); Size: 5; value: - 65353; Options: [vcoSkipOutputCheck]),
+    (Bytes: ($80, $80, $80, $80, $08, $00, $00, $00, $00, $00); Size: 5; value: - 2147483648; Options: [vcoSkipOutputCheck]),
     // 64-bit
-    (bytes: ($BE, $F7, $92, $84, $0B, $00, $00, $00, $00, $00); Size: 5; value: 2961488830; Options: [vcoIs64]),
-    (bytes: ($BE, $F7, $92, $84, $1B, $00, $00, $00, $00, $00); Size: 5; value: 7256456126; Options: [vcoIs64]),
-    (bytes: ($80, $E6, $EB, $9C, $C3, $C9, $A4, $49, $00, $00); Size: 8; value: 41256202580718336; Options: [vcoIs64]));
+    (Bytes: ($BE, $F7, $92, $84, $0B, $00, $00, $00, $00, $00); Size: 5; value: 2961488830; Options: [vcoIs64]), (Bytes: ($BE, $F7, $92, $84, $1B, $00, $00, $00, $00, $00);
+    Size: 5; value: 7256456126; Options: [vcoIs64]), (Bytes: ($80, $E6, $EB, $9C, $C3, $C9, $A4, $49, $00, $00); Size: 8; value: 41256202580718336; Options: [vcoIs64]));
 var
-  i, j, k: integer;
+  i, j, k: Integer;
   t: TVarintCase;
   pbi: TProtoBufInput;
   pbo: TProtoBufOutput;
   buf, output: AnsiString;
   i64: Int64;
-  int: integer;
+  int: Integer;
 begin
-  pbo:= TProtoBufOutput.Create;
+  pbo := TProtoBufOutput.Create;
   try
-    for i := Low(VarIntCases) to High(VarIntCases) do
+    for i := Low(VarintCases) to High(VarintCases) do
       begin
-        t:= VarintCases[i];
+        t := VarintCases[i];
         pbo.Clear;
         // create test buffer
         SetLength(buf, t.Size);
         for j := 1 to t.Size do
-          buf[j] := AnsiChar(t.bytes[j]);
+          buf[j] := AnsiChar(t.Bytes[j]);
         pbi := TProtoBufInput.Create(@buf[1], t.Size);
         try
           if vcoIs64 in t.Options then
-          begin
-            i64 := pbi.readRawVarint64;
-            CheckEquals(t.value, i64, Format('Test Varint64 %d fails', [i]));
-            pbo.writeRawVarint64(i64);
-          end else
-          begin
-            int := pbi.readRawVarint32;
-            CheckEquals(t.value, int, Format('Test Varint32 %d fails', [i]));
-            pbo.writeRawVarint32(t.value);
-          end;
+            begin
+              i64 := pbi.readRawVarint64;
+              CheckEquals(t.value, i64, Format('Test Varint64 %d fails', [i]));
+              pbo.writeRawVarint64(i64);
+            end
+          else
+            begin
+              int := pbi.readRawVarint32;
+              CheckEquals(t.value, int, Format('Test Varint32 %d fails', [i]));
+              pbo.writeRawVarint32(t.value);
+            end;
           if vcoSkipOutputCheck in t.Options then
             Continue;
-          output:= pbo.GetText;
+          output := pbo.GetText;
           CheckEquals(t.Size, Length(output), Format('Output for Test %d is not as long/short as expected', [i]));
-          for k:= 1 to t.Size do
-            CheckEquals(t.bytes[k], Byte(output[k]), Format('Output for Test %d differs from input at index %d', [i, k]));
+          for k := 1 to t.Size do
+            CheckEquals(t.Bytes[k], byte(output[k]), Format('Output for Test %d differs from input at index %d', [i, k]));
         finally
           pbi.Free;
         end;
@@ -522,9 +520,9 @@ procedure TestProtoBufRawIO.DoReadRawVarIntForError(ABytes: Pointer; ASize: Inte
 var
   pb: TProtoBufInput;
 begin
-  pb:= TProtoBufInput.Create(ABytes, ASize);
+  pb := TProtoBufInput.Create(ABytes, ASize);
   try
-    //we only call readRawVarint64 as this is what readRawVarint32 does anyway
+    // we only call readRawVarint64 as this is what readRawVarint32 does anyway
     pb.readRawVarint64;
   finally
     pb.Free;
@@ -533,11 +531,11 @@ end;
 
 procedure TestProtoBufRawIO.InputErrorBytesEOF;
 const
-  bytes: array[1..2] of Byte = ($02, $20);
+  Bytes: array [1 .. 2] of byte = ($02, $20);
 var
   pb: TProtoBufInput;
 begin
-  pb:= TProtoBufInput.Create(@bytes[1], SizeOf(bytes));
+  pb := TProtoBufInput.Create(@Bytes[1], SizeOf(Bytes));
   try
     pb.readBytes;
   finally
@@ -547,12 +545,12 @@ end;
 
 procedure TestProtoBufRawIO.InputErrorBytesNegativeSize;
 const
-  //negative size -255, bytes taken from TestVarInt
-  bytes: array[1..10] of Byte = ($81, $FE, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $01);
+  // negative size -255, bytes taken from TestVarInt
+  Bytes: array [1 .. 10] of byte = ($81, $FE, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $01);
 var
   pb: TProtoBufInput;
 begin
-  pb:= TProtoBufInput.Create(@bytes[1], SizeOf(bytes));
+  pb := TProtoBufInput.Create(@Bytes[1], SizeOf(Bytes));
   try
     pb.readBytes;
   finally
@@ -562,11 +560,11 @@ end;
 
 procedure TestProtoBufRawIO.InputErrorStringEOF;
 const
-  bytes: array[1..2] of Byte = ($02, $20);
+  Bytes: array [1 .. 2] of byte = ($02, $20);
 var
   pb: TProtoBufInput;
 begin
-  pb:= TProtoBufInput.Create(@bytes[1], SizeOf(bytes));
+  pb := TProtoBufInput.Create(@Bytes[1], SizeOf(Bytes));
   try
     pb.readString;
   finally
@@ -576,12 +574,12 @@ end;
 
 procedure TestProtoBufRawIO.InputErrorStringNegativeSize;
 const
-  //negative size -255, bytes taken from TestVarInt
-  bytes: array[1..10] of Byte = ($81, $FE, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $01);
+  // negative size -255, bytes taken from TestVarInt
+  Bytes: array [1 .. 10] of byte = ($81, $FE, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $01);
 var
   pb: TProtoBufInput;
 begin
-  pb:= TProtoBufInput.Create(@bytes[1], SizeOf(bytes));
+  pb := TProtoBufInput.Create(@Bytes[1], SizeOf(Bytes));
   try
     pb.readString;
   finally
@@ -591,23 +589,23 @@ end;
 
 procedure TestProtoBufRawIO.InputErrorVarInt32EOF;
 const
-  bytes: array[1..2] of Byte = ($FF, $FF);
+  Bytes: array [1 .. 2] of byte = ($FF, $FF);
 begin
-  DoReadRawVarIntForError(@bytes, SizeOf(bytes));
+  DoReadRawVarIntForError(@Bytes, SizeOf(Bytes));
 end;
 
 procedure TestProtoBufRawIO.InputErrorVarInt32Unterminated;
 const
-  bytes: array[1..10] of Byte = ($FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF);
+  Bytes: array [1 .. 10] of byte = ($FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF);
 begin
-  DoReadRawVarIntForError(@bytes, SizeOf(bytes) - 1);
+  DoReadRawVarIntForError(@Bytes, SizeOf(Bytes) - 1);
 end;
 
 procedure TestProtoBufRawIO.InputErrorVarInt32ToLong;
 const
-  bytes: array[1..11] of Byte = ($FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF);
+  Bytes: array [1 .. 11] of byte = ($FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF, $FF);
 begin
-  DoReadRawVarIntForError(@bytes, SizeOf(bytes));
+  DoReadRawVarIntForError(@Bytes, SizeOf(Bytes));
 end;
 
 procedure TestProtoBufRawIO.TestVarintErrors;
@@ -618,5 +616,7 @@ begin
 end;
 
 initialization
-  RegisterTest(TestProtoBufRawIO.Suite);
+
+RegisterTest(TestProtoBufRawIO.Suite);
+
 end.
