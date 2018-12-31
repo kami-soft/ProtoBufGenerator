@@ -2,7 +2,7 @@ object fmMain: TfmMain
   Left = 0
   Top = 0
   Caption = 'ProtoBufGenerator'
-  ClientHeight = 154
+  ClientHeight = 192
   ClientWidth = 458
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -15,7 +15,7 @@ object fmMain: TfmMain
   OnCreate = FormCreate
   DesignSize = (
     458
-    154)
+    192)
   PixelsPerInch = 96
   TextHeight = 13
   object edProtoFileName: TEdit
@@ -39,9 +39,9 @@ object fmMain: TfmMain
   end
   object btnGenerate: TButton
     Left = 8
-    Top = 80
+    Top = 112
     Width = 442
-    Height = 66
+    Height = 72
     Anchors = [akLeft, akTop, akRight, akBottom]
     Caption = 'Generate'
     TabOrder = 2
@@ -65,6 +65,15 @@ object fmMain: TfmMain
     Caption = '...'
     TabOrder = 4
     OnClick = btnChooseOutputFolderClick
+  end
+  object edBaseClassName: TEdit
+    Left = 8
+    Top = 85
+    Width = 442
+    Height = 21
+    Anchors = [akLeft, akTop, akRight]
+    TabOrder = 5
+    TextHint = 'Choose base class name'
   end
   object odProtoFile: TFileOpenDialog
     DefaultExtension = '.proto'

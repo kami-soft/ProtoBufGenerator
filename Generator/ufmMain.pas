@@ -1,5 +1,5 @@
 unit ufmMain;
-
+
 interface
 
 uses
@@ -23,6 +23,7 @@ type
     btnGenerate: TButton;
     edOutputFolder: TEdit;
     btnChooseOutputFolder: TButton;
+    edBaseClassName: TEdit;
     procedure btnOpenProtoFileClick(Sender: TObject);
     procedure btnChooseOutputFolderClick(Sender: TObject);
     procedure btnGenerateClick(Sender: TObject);
@@ -30,7 +31,7 @@ type
     procedure FormCreate(Sender: TObject);
   private
     { Private declarations }
-    procedure Generate(SourceFiles: TStrings; const OutputDir: string);
+    procedure Generate(SourceFiles: TStrings; const OutputDir, BaseClassName: string);
   public
     { Public declarations }
   end;
@@ -65,7 +66,7 @@ begin
   try
     FileNames.Delimiter := odProtoFile.Files.Delimiter;
     FileNames.DelimitedText := edProtoFileName.Text;
-    Generate(FileNames, edOutputFolder.Text);
+    Generate(FileNames, edOutputFolder.Text, edBaseClassName.Text);
     ShowMessage('Complete! Take a look into output directory');
   finally
     FileNames.Free;
@@ -90,6 +91,7 @@ begin
   try
     ini.WriteString('Common', 'ProtoFiles', edProtoFileName.Text);
     ini.WriteString('Common', 'PasOutputFolder', edOutputFolder.Text);
+    ini.WriteString('Common', 'BaseClassName', edBaseClassName.Text);
   finally
     ini.Free;
   end;
@@ -107,17 +109,19 @@ begin
   try
     edProtoFileName.Text := ini.ReadString('Common', 'ProtoFiles', '');
     edOutputFolder.Text := ini.ReadString('Common', 'PasOutputFolder', '');
+    edBaseClassName.Text := ini.ReadString('Common', 'BaseClassName', TProtoBufGenerator.BaseClassName);
   finally
     ini.Free;
   end;
 end;
 
-procedure TfmMain.Generate(SourceFiles: TStrings; const OutputDir: string);
+procedure TfmMain.Generate(SourceFiles: TStrings; const OutputDir, BaseClassName: string);
 var
   Gen: TProtoBufGenerator;
   i: Integer;
 begin
   System.SysUtils.ForceDirectories(OutputDir);
+  TProtoBufGenerator.BaseClassName := BaseClassName;
   Gen := TProtoBufGenerator.Create;
   try
     for i := 0 to SourceFiles.Count - 1 do
@@ -128,3 +132,4 @@ begin
 end;
 
 end.
+

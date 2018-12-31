@@ -16,7 +16,7 @@ uses
 type
   TFieldState = set of (fsRequired, fsHasValue);
 
-  TAbstractProtoBufClass = class(TObject)
+  TAbstractProtoBuf = class(TObject)
   strict private
   type
     {$IFDEF FPC}
@@ -44,7 +44,7 @@ type
     constructor Create; virtual;
     destructor Destroy; override;
 
-    procedure Assign(ProtoBuf: TAbstractProtoBufClass);
+    procedure Assign(ProtoBuf: TAbstractProtoBuf);
 
     procedure LoadFromMem(const Mem: Pointer; const Size: Integer; const OwnsMem: Boolean = False);
     procedure LoadFromStream(Stream: TStream);
@@ -59,9 +59,9 @@ type
   end;
 
   {$IFDEF FPC}
-  TProtoBufClassList<T: TAbstractProtoBufClass> = class(TFPGObjectList<T>)
+  TProtoBufList<T: TAbstractProtoBuf> = class(TFPGObjectList<T>)
   {$ELSE}
-  TProtoBufClassList<T: TAbstractProtoBufClass, constructor> = class(TObjectList<T>)
+  TProtoBufList<T: TAbstractProtoBuf, constructor> = class(TObjectList<T>)
   {$ENDIF}
   public
     function AddFromBuf(ProtoBuf: TProtoBufInput; FieldNum: integer): Boolean; virtual;
@@ -73,9 +73,9 @@ implementation
 uses
   pbPublic;
 
-{ TAbstractProtoBufClass }
+{ TAbstractProtoBuf }
 
-function TAbstractProtoBufClass.GetFieldState(Tag: Integer): TFieldState;
+function TAbstractProtoBuf.GetFieldState(Tag: Integer): TFieldState;
 {$IFDEF FPC}
 var
   idx: Integer;
@@ -90,7 +90,7 @@ begin
 {$ENDIF}
 end;
 
-procedure TAbstractProtoBufClass.AddFieldState(Tag: integer;
+procedure TAbstractProtoBuf.AddFieldState(Tag: integer;
   AFieldState: TFieldState);
 begin
 {$IFDEF FPC}
@@ -100,17 +100,17 @@ begin
 {$ENDIF}
 end;
 
-procedure TAbstractProtoBufClass.AddLoadedField(Tag: integer);
+procedure TAbstractProtoBuf.AddLoadedField(Tag: integer);
 begin
   AddFieldState(Tag, [fsHasValue]);
 end;
 
-procedure TAbstractProtoBufClass.AfterLoad;
+procedure TAbstractProtoBuf.AfterLoad;
 begin
 
 end;
 
-procedure TAbstractProtoBufClass.Assign(ProtoBuf: TAbstractProtoBufClass);
+procedure TAbstractProtoBuf.Assign(ProtoBuf: TAbstractProtoBuf);
 var
   Stream: TStream;
 begin
@@ -124,7 +124,7 @@ begin
   end;
 end;
 
-procedure TAbstractProtoBufClass.BeforeLoad;
+procedure TAbstractProtoBuf.BeforeLoad;
 {$IFDEF FPC}
 var
   i: Integer;
@@ -141,7 +141,7 @@ begin
 {$ENDIF}
 end;
 
-procedure TAbstractProtoBufClass.ClearFieldState(Tag: Integer;
+procedure TAbstractProtoBuf.ClearFieldState(Tag: Integer;
   AFieldState: TFieldState);
 begin
 {$IFDEF FPC}
@@ -151,7 +151,7 @@ begin
 {$ENDIF}
 end;
 
-constructor TAbstractProtoBufClass.Create;
+constructor TAbstractProtoBuf.Create;
 begin
   inherited Create;
   FFieldStates:= TFieldStates.Create;
@@ -160,18 +160,18 @@ begin
   {$ENDIF}
 end;
 
-destructor TAbstractProtoBufClass.Destroy;
+destructor TAbstractProtoBuf.Destroy;
 begin
   FreeAndNil(FFieldStates);
   inherited;
 end;
 
-function TAbstractProtoBufClass.GetFieldHasValue(Tag: Integer): Boolean;
+function TAbstractProtoBuf.GetFieldHasValue(Tag: Integer): Boolean;
 begin
   Result:= fsHasValue in GetFieldState(Tag);
 end;
 
-function TAbstractProtoBufClass.AllRequiredFieldsValid: Boolean;
+function TAbstractProtoBuf.AllRequiredFieldsValid: Boolean;
 {$IFDEF FPC}
 var
   i: Integer;
@@ -194,7 +194,7 @@ begin
 {$ENDIF}
 end;
 
-procedure TAbstractProtoBufClass.LoadFromBuf(ProtoBuf: TProtoBufInput);
+procedure TAbstractProtoBuf.LoadFromBuf(ProtoBuf: TProtoBufInput);
 var
   FieldNumber: integer;
   Tag: integer;
@@ -217,7 +217,7 @@ begin
   AfterLoad;
 end;
 
-procedure TAbstractProtoBufClass.LoadFromMem(const Mem: Pointer; const Size: Integer; const OwnsMem: Boolean);
+procedure TAbstractProtoBuf.LoadFromMem(const Mem: Pointer; const Size: Integer; const OwnsMem: Boolean);
 var
   pb: TProtoBufInput;
 begin
@@ -229,7 +229,7 @@ begin
   end;
 end;
 
-procedure TAbstractProtoBufClass.LoadFromStream(Stream: TStream);
+procedure TAbstractProtoBuf.LoadFromStream(Stream: TStream);
 var
   pb: TProtoBufInput;
   tmpStream: TStream;
@@ -250,28 +250,28 @@ begin
   end;
 end;
 
-function TAbstractProtoBufClass.LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer; WireType: integer): Boolean;
+function TAbstractProtoBuf.LoadSingleFieldFromBuf(ProtoBuf: TProtoBufInput; FieldNumber: integer; WireType: integer): Boolean;
 begin
   Result := False;
 end;
 
-procedure TAbstractProtoBufClass.RegisterRequiredField(Tag: integer);
+procedure TAbstractProtoBuf.RegisterRequiredField(Tag: integer);
 begin
   AddFieldState(Tag, [fsRequired]);
 end;
 
-procedure TAbstractProtoBufClass.SaveFieldsToBuf(ProtoBuf: TProtoBufOutput);
+procedure TAbstractProtoBuf.SaveFieldsToBuf(ProtoBuf: TProtoBufOutput);
 begin
   if not AllRequiredFieldsValid then
     raise EStreamError.CreateFmt('Saving %s: not all required fields have been set', [ClassName]);
 end;
 
-procedure TAbstractProtoBufClass.SaveToBuf(ProtoBuf: TProtoBufOutput);
+procedure TAbstractProtoBuf.SaveToBuf(ProtoBuf: TProtoBufOutput);
 begin
   SaveFieldsToBuf(ProtoBuf);
 end;
 
-procedure TAbstractProtoBufClass.SaveToStream(Stream: TStream);
+procedure TAbstractProtoBuf.SaveToStream(Stream: TStream);
 var
   pb: TProtoBufOutput;
 begin
@@ -284,7 +284,7 @@ begin
   end;
 end;
 
-procedure TAbstractProtoBufClass.SetFieldHasValue(Tag: Integer;
+procedure TAbstractProtoBuf.SetFieldHasValue(Tag: Integer;
   const Value: Boolean);
 begin
   if Value then
@@ -294,7 +294,7 @@ end;
 
 { TProtoBufList<T> }
 
-function TProtoBufClassList<T>.AddFromBuf(ProtoBuf: TProtoBufInput; FieldNum: integer): Boolean;
+function TProtoBufList<T>.AddFromBuf(ProtoBuf: TProtoBufInput; FieldNum: integer): Boolean;
 var
   tmpBuf: TProtoBufInput;
   Item: T;
@@ -321,7 +321,7 @@ begin
   Result := True;
 end;
 
-procedure TProtoBufClassList<T>.SaveToBuf(ProtoBuf: TProtoBufOutput; FieldNumForItems: integer);
+procedure TProtoBufList<T>.SaveToBuf(ProtoBuf: TProtoBufOutput; FieldNumForItems: integer);
 var
   i: integer;
   tmpBuf: TProtoBufOutput;

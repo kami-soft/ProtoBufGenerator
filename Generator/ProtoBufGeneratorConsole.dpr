@@ -25,6 +25,7 @@ uses
 const
   InputFileAliases: TArray<string> = ['f', 'file'];
   OutputFolderAliases: TArray<string> = ['o', 'output'];
+  BaseClassAliases: TArray<string> = ['b', 'base'];
   HelpAliases: TArray<string> = ['h', 'help'];
 
 type
@@ -107,6 +108,7 @@ begin
   Writeln('             for parse several .proto files - separate them with space');
   Writeln('             do not forget to enquote paths with "", if them contains spaces');
   Writeln('/o /output - output folder. Folder must have write access rights.');
+  Writeln('/b /base   - base class name. By default - AbstractProtoBuf');
 end;
 
 procedure GenerateSingle(const InputFileOrDir, OutputDir: string);
@@ -210,6 +212,18 @@ procedure GenerateAll(ParamList: TParamList);
     Result := True;
   end;
 
+  procedure FillBaseClass;
+  var
+    i: integer;
+  begin
+    i := ParamList.FindParam(BaseClassAliases);
+    if i <> -1 then
+      begin
+        TProtoBufGenerator.BaseClassName := ParamList[i].ParamValue;
+        Writeln('Base class name set to ' + TProtoBufGenerator.BaseClassName);
+      end;
+  end;
+
 var
   InputFileList: TStringList;
   OutputFolder: string;
@@ -222,8 +236,13 @@ begin
     FillInputFileList(InputFileList);
     if not CheckFilesExists(InputFileList) then
       exit;
+
+    ForceDirectories(OutputFolder);
     if not FindOutputFolder(OutputFolder) then
       exit;
+
+    FillBaseClass;
+
     for i := 0 to InputFileList.Count - 1 do
       GenerateSingle(InputFileList[i], OutputFolder);
   finally

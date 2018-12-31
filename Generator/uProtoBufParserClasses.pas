@@ -14,8 +14,7 @@ type
     ptRequired, //
     ptOptional, //
     ptRepeated, //
-    ptReserved,
-    ptOneOf);
+    ptReserved, ptOneOf);
 
   TScalarPropertyType = ( //
     sptComplex, //
@@ -39,7 +38,7 @@ type
   private
     FOptionValue: string;
   public
-    procedure ParseFromProto(const Proto: string; var iPos: integer); override;
+    procedure ParseFromProto(const Proto: string; var iPos: Integer); override;
     property OptionValue: string read FOptionValue;
   end;
 
@@ -48,14 +47,14 @@ type
     function GetHasValue(const OptionName: string): Boolean;
     function GetValue(const OptionName: string): string;
   public
-    procedure ParseFromProto(const Proto: string; var iPos: integer); override;
+    procedure ParseFromProto(const Proto: string; var iPos: Integer); override;
     property HasValue[const OptionName: string]: Boolean read GetHasValue;
     property Value[const OptionName: string]: string read GetValue;
   end;
 
   TProtoBufProperty = class(TAbstractProtoBufParserItem)
   strict private
-    FPropFieldNum: integer;
+    FPropFieldNum: Integer;
     FPropType: string;
     FPropKind: TPropKind;
     FPropOptions: TProtoBufPropOptions;
@@ -64,23 +63,23 @@ type
     constructor Create(ARoot: TAbstractProtoBufParserItem); override;
     destructor Destroy; override;
 
-    procedure ParseFromProto(const Proto: string; var iPos: integer); override;
+    procedure ParseFromProto(const Proto: string; var iPos: Integer); override;
 
     property PropKind: TPropKind read FPropKind;
     property PropType: string read FPropType;
-    property PropFieldNum: integer read FPropFieldNum;
+    property PropFieldNum: Integer read FPropFieldNum;
     property PropOptions: TProtoBufPropOptions read FPropOptions;
     property OneOfPropertyParent: TProtoBufProperty read FOneOfPropertyParent write FOneOfPropertyParent;
   end;
 
   TProtoBufEnumValue = class(TAbstractProtoBufParserItem)
   strict private
-    FValue: integer;
+    FValue: Integer;
     FIsHexValue: Boolean;
   public
-    procedure ParseFromProto(const Proto: string; var iPos: integer); override;
+    procedure ParseFromProto(const Proto: string; var iPos: Integer); override;
 
-    property Value: integer read FValue;
+    property Value: Integer read FValue;
     property IsHexValue: Boolean read FIsHexValue;
   end;
 
@@ -89,7 +88,7 @@ type
     FAllowAlias: Boolean;
     FHexFormatString: string;
   public
-    procedure ParseFromProto(const Proto: string; var iPos: integer); override;
+    procedure ParseFromProto(const Proto: string; var iPos: Integer); override;
 
     function GetEnumValueString(AEnumIndex: Integer): string;
 
@@ -98,7 +97,7 @@ type
 
   TProtoBufMessage = class(TAbstractProtoBufParserContainer<TProtoBufProperty>)
   public
-    procedure ParseFromProto(const Proto: string; var iPos: integer); override;
+    procedure ParseFromProto(const Proto: string; var iPos: Integer); override;
 
     function HasPropertyOfType(const APropType: string): Boolean;
   end;
@@ -120,7 +119,7 @@ type
     FProtoBufMessages: TProtoBufMessageList;
     FProtoBufEnums: TProtoBufEnumList;
 
-    FInImportCounter: integer;
+    FInImportCounter: Integer;
     FFileName: string;
     FImports: TStrings;
     FProtoSyntaxVersion: TProtoSyntaxVersion;
@@ -132,10 +131,10 @@ type
     constructor Create(ARoot: TAbstractProtoBufParserItem); override;
     destructor Destroy; override;
 
-    procedure ParseEnum(const Proto: string; var iPos: integer; Comments: TStringList);
-    procedure ParseMessage(const Proto: string; var iPos: integer; Comments: TStringList; IsExtension: Boolean = False);
+    procedure ParseEnum(const Proto: string; var iPos: Integer; Comments: TStringList);
+    procedure ParseMessage(const Proto: string; var iPos: Integer; Comments: TStringList; IsExtension: Boolean = False);
 
-    procedure ParseFromProto(const Proto: string; var iPos: integer); override;
+    procedure ParseFromProto(const Proto: string; var iPos: Integer); override;
 
     property Imports: TStrings read FImports;
     property ProtoBufEnums: TProtoBufEnumList read FProtoBufEnums;
@@ -254,25 +253,26 @@ begin
   inherited;
 end;
 
-procedure SkipWhitespaces(const Proto: string; var iPos: integer; ASkipParagraphSeparator: Boolean = True);
+procedure SkipWhitespaces(const Proto: string; var iPos: Integer; ASkipParagraphSeparator: Boolean = True);
 begin
   while Proto[iPos].IsWhiteSpace and (iPos <= Length(Proto)) do
-  begin
-    if not ASkipParagraphSeparator then
     begin
-      if UCS4Char(Proto[iPos]) < $FF then //IsLatin1, not accessible
-      begin
-        if Proto[iPos].IsInArray([#13, #10]) then
-          Break;
-      end else
-        if Proto[iPos].GetUnicodeCategory = TUnicodeCategory.ucParagraphSeparator then
-          Break;
+      if not ASkipParagraphSeparator then
+        begin
+          if UCS4Char(Proto[iPos]) < $FF then // IsLatin1, not accessible
+            begin
+              if Proto[iPos].IsInArray([#13, #10]) then
+                Break;
+            end
+          else
+            if Proto[iPos].GetUnicodeCategory = TUnicodeCategory.ucParagraphSeparator then
+              Break;
+        end;
+      Inc(iPos);
     end;
-    Inc(iPos);
-  end;
 end;
 
-function ReadAllTillChar(const Proto: string; var iPos: integer; BreakSymbol: array of Char): string;
+function ReadAllTillChar(const Proto: string; var iPos: Integer; BreakSymbol: array of Char): string;
 begin
   Result := '';
   while not Proto[iPos].IsInArray(BreakSymbol) and (iPos <= Length(Proto)) do
@@ -282,12 +282,12 @@ begin
     end;
 end;
 
-function ReadAllToEOL(const Proto: string; var iPos: integer): string;
+function ReadAllToEOL(const Proto: string; var iPos: Integer): string;
 begin
   Result := ReadAllTillChar(Proto, iPos, [#13, #10]);
 end;
 
-procedure ReadCommentIfExists(ADestList: TStrings; AMultiLine: Boolean; const Proto: string; var iPos: integer);
+procedure ReadCommentIfExists(ADestList: TStrings; AMultiLine: Boolean; const Proto: string; var iPos: Integer);
 var
   s: string;
 begin
@@ -296,28 +296,29 @@ begin
     begin
       Inc(iPos, 2);
       SkipWhitespaces(Proto, iPos, False);
-      s:= ReadAllToEOL(Proto, iPos);
+      s := ReadAllToEOL(Proto, iPos);
       if Length(s) > 0 then
         ADestList.Add(s);
-      //since we've Read to EOL, this will skip the EOL, if allowed
+      // since we've Read to EOL, this will skip the EOL, if allowed
       if AMultiLine then
         SkipWhitespaces(Proto, iPos);
     end;
 end;
 
-procedure SkipAllComments(const Proto: string; var iPos: integer);
+procedure SkipAllComments(const Proto: string; var iPos: Integer);
 begin
   while True do
-  begin
-    SkipWhitespaces(Proto, iPos);
-    if (Proto[iPos] = '/') and (Proto[iPos + 1] = '/') then
-      ReadAllToEOL(Proto, iPos) else
-      Break;
-  end;
+    begin
+      SkipWhitespaces(Proto, iPos);
+      if (Proto[iPos] = '/') and (Proto[iPos + 1] = '/') then
+        ReadAllToEOL(Proto, iPos)
+      else
+        Break;
+    end;
   SkipWhitespaces(Proto, iPos);
 end;
 
-procedure SkipRequiredChar(const Proto: string; var iPos: integer; const RequiredChar: Char);
+procedure SkipRequiredChar(const Proto: string; var iPos: Integer; const RequiredChar: Char);
 begin
   SkipWhitespaces(Proto, iPos);
   if Proto[iPos] <> RequiredChar then
@@ -325,7 +326,7 @@ begin
   Inc(iPos);
 end;
 
-function ReadWordFromBuf(const Proto: string; var iPos: integer; BreakSymbols: array of Char): string;
+function ReadWordFromBuf(const Proto: string; var iPos: Integer; BreakSymbols: array of Char): string;
 begin
   SkipWhitespaces(Proto, iPos);
 
@@ -337,7 +338,7 @@ begin
     end;
 end;
 
-procedure TProtoBufProperty.ParseFromProto(const Proto: string; var iPos: integer);
+procedure TProtoBufProperty.ParseFromProto(const Proto: string; var iPos: Integer);
 var
   Buf: string;
   tmpOption: TProtoBufPropOption;
@@ -364,44 +365,45 @@ begin
   FPropType := Buf;
 
   if FPropKind = ptOneOf then
-  begin
-    FName := FPropType;
-    // skip '{' character
-    SkipRequiredChar(Proto, iPos, '{');
-  end else
-  begin
-    FName := ReadWordFromBuf(Proto, iPos, ['=']);
+    begin
+      FName := FPropType;
+      // skip '{' character
+      SkipRequiredChar(Proto, iPos, '{');
+    end
+  else
+    begin
+      FName := ReadWordFromBuf(Proto, iPos, ['=']);
 
-    // skip '=' character
-    SkipRequiredChar(Proto, iPos, '=');
+      // skip '=' character
+      SkipRequiredChar(Proto, iPos, '=');
 
-    // read property tag
-    Buf := ReadWordFromBuf(Proto, iPos, [';', '[']);
-    FPropFieldNum := StrToInt(Buf);
-    SkipWhitespaces(Proto, iPos);
-    if Proto[iPos] = '[' then
-      FPropOptions.ParseFromProto(Proto, iPos);
+      // read property tag
+      Buf := ReadWordFromBuf(Proto, iPos, [';', '[']);
+      FPropFieldNum := StrToInt(Buf);
+      SkipWhitespaces(Proto, iPos);
+      if Proto[iPos] = '[' then
+        FPropOptions.ParseFromProto(Proto, iPos);
 
-    if Assigned(FRoot) then
-      if TProtoFile(FRoot).ProtoSyntaxVersion = psv3 then
-        if not FPropOptions.HasValue['packed'] then
-          begin
-            tmpOption := TProtoBufPropOption.Create(FRoot);
-            FPropOptions.Add(tmpOption);
-            tmpOption.Name := 'packed';
-            tmpOption.FOptionValue := 'true';
-          end;
+      if Assigned(FRoot) then
+        if TProtoFile(FRoot).ProtoSyntaxVersion = psv3 then
+          if not FPropOptions.HasValue['packed'] then
+            begin
+              tmpOption := TProtoBufPropOption.Create(FRoot);
+              FPropOptions.Add(tmpOption);
+              tmpOption.Name := 'packed';
+              tmpOption.FOptionValue := 'true';
+            end;
 
-    // read separator
-    SkipRequiredChar(Proto, iPos, ';');
-  end;
+      // read separator
+      SkipRequiredChar(Proto, iPos, ';');
+    end;
 
   ReadCommentIfExists(FComments, False, Proto, iPos);
 end;
 
 { TProtoBufPropOption }
 
-procedure TProtoBufPropOption.ParseFromProto(const Proto: string; var iPos: integer);
+procedure TProtoBufPropOption.ParseFromProto(const Proto: string; var iPos: Integer);
 begin
   inherited;
   { [default = Val2, packed = true]; }
@@ -433,7 +435,7 @@ end;
 
 function TProtoBufPropOptions.GetHasValue(const OptionName: string): Boolean;
 var
-  i: integer;
+  i: Integer;
 begin
   Result := False;
   for i := 0 to Count - 1 do
@@ -446,7 +448,7 @@ end;
 
 function TProtoBufPropOptions.GetValue(const OptionName: string): string;
 var
-  i: integer;
+  i: Integer;
 begin
   Result := '';
   for i := 0 to Count - 1 do
@@ -457,7 +459,7 @@ begin
       end;
 end;
 
-procedure TProtoBufPropOptions.ParseFromProto(const Proto: string; var iPos: integer);
+procedure TProtoBufPropOptions.ParseFromProto(const Proto: string; var iPos: Integer);
 var
   Option: TProtoBufPropOption;
 begin
@@ -481,7 +483,7 @@ end;
 
 { TProtoBufEnumValue }
 
-procedure TProtoBufEnumValue.ParseFromProto(const Proto: string; var iPos: integer);
+procedure TProtoBufEnumValue.ParseFromProto(const Proto: string; var iPos: Integer);
 var
   s: string;
 begin
@@ -492,9 +494,9 @@ begin
   if Length(FName) = 0 then
     raise EParserError.Create('Enumeration contains unnamed value');
   SkipRequiredChar(Proto, iPos, '=');
-  s:= ReadWordFromBuf(Proto, iPos, [';']);
+  s := ReadWordFromBuf(Proto, iPos, [';']);
   FValue := StrToInt(s);
-  FIsHexValue:= Pos('0x', s) = 1;
+  FIsHexValue := Pos('0x', s) = 1;
   SkipRequiredChar(Proto, iPos, ';');
   ReadCommentIfExists(FComments, False, Proto, iPos);
 end;
@@ -505,15 +507,16 @@ function TProtoBufEnum.GetEnumValueString(AEnumIndex: Integer): string;
 var
   item: TProtoBufEnumValue;
 begin
-  item:= Items[AEnumIndex];
-  if item.isHexValue then
-    Result:= Format(FHexFormatString, [item.Value]) else
-    Result:= IntToStr(item.Value);
+  item := Items[AEnumIndex];
+  if item.IsHexValue then
+    Result := Format(FHexFormatString, [item.Value])
+  else
+    Result := IntToStr(item.Value);
 end;
 
-procedure TProtoBufEnum.ParseFromProto(const Proto: string; var iPos: integer);
+procedure TProtoBufEnum.ParseFromProto(const Proto: string; var iPos: Integer);
 var
-  Item: TProtoBufEnumValue;
+  item: TProtoBufEnumValue;
   lPos, lMaxValue: Integer;
   sOptionPeek, sOptionValue: string;
   TempComments: TStringList;
@@ -524,46 +527,48 @@ begin
     Val2 = 2;
     } *)
 
-  lMaxValue:= 0;
+  lMaxValue := 0;
   FName := ReadWordFromBuf(Proto, iPos, ['{']);
   SkipRequiredChar(Proto, iPos, '{');
-  TempComments:= TStringList.Create;
+  TempComments := TStringList.Create;
   try
-    TempComments.TrailingLineBreak:= False;
+    TempComments.TrailingLineBreak := False;
     while Proto[iPos] <> '}' do
       begin
         TempComments.Clear;
         SkipWhitespaces(Proto, iPos);
         ReadCommentIfExists(TempComments, True, Proto, iPos);
-        if Proto[iPos] = '}' then //after reading comments, the enum might prematurly end
+        if Proto[iPos] = '}' then // after reading comments, the enum might prematurly end
           Continue;
 
-        lPos:= iPos;
-        sOptionPeek:= ReadWordFromBuf(Proto, lPos, [';']);
+        lPos := iPos;
+        sOptionPeek := ReadWordFromBuf(Proto, lPos, [';']);
         if SameText(sOptionPeek, 'option') then
-        begin
-          iPos:= lPos;
-          sOptionPeek:= ReadWordFromBuf(Proto, iPos, [';']);
-          SkipRequiredChar(Proto, iPos, '=');
-          sOptionValue:= ReadWordFromBuf(Proto, iPos, [';']);
-          if SameText(sOptionPeek, 'allow_alias') then
-            FAllowAlias:= SameText(sOptionValue, 'true') else
-            raise EParserError.CreateFmt('Unknown option %s while parsing enum %s', [sOptionPeek, FName]);
-          SkipRequiredChar(Proto, iPos, ';');
-        end else
-        begin
-          Item := TProtoBufEnumValue.Create(FRoot);
-          try
-            Item.ParseFromProto(Proto, iPos);
-            Item.AddCommentsToBeginning(TempComments);
-            Add(Item);
-            lMaxValue:= Max(lMaxValue, Item.Value);
-            Item := nil;
-            SkipWhitespaces(Proto, iPos);
-          finally
-            Item.Free;
+          begin
+            iPos := lPos;
+            sOptionPeek := ReadWordFromBuf(Proto, iPos, [';']);
+            SkipRequiredChar(Proto, iPos, '=');
+            sOptionValue := ReadWordFromBuf(Proto, iPos, [';']);
+            if SameText(sOptionPeek, 'allow_alias') then
+              FAllowAlias := SameText(sOptionValue, 'true')
+            else
+              raise EParserError.CreateFmt('Unknown option %s while parsing enum %s', [sOptionPeek, FName]);
+            SkipRequiredChar(Proto, iPos, ';');
+          end
+        else
+          begin
+            item := TProtoBufEnumValue.Create(FRoot);
+            try
+              item.ParseFromProto(Proto, iPos);
+              item.AddCommentsToBeginning(TempComments);
+              Add(item);
+              lMaxValue := Max(lMaxValue, item.Value);
+              item := nil;
+              SkipWhitespaces(Proto, iPos);
+            finally
+              item.Free;
+            end;
           end;
-        end;
       end;
   finally
     TempComments.Free;
@@ -572,13 +577,15 @@ begin
   ReadCommentIfExists(FComments, False, Proto, iPos);
 
   if lMaxValue < 256 then
-    FHexFormatString:= '$%.2x' else
+    FHexFormatString := '$%.2x'
+  else
     if lMaxValue < 65536 then
-      FHexFormatString:= '$%.4x' else
-      FHexFormatString:= '$%.8x';
+      FHexFormatString := '$%.4x'
+    else
+      FHexFormatString := '$%.8x';
 
   Sort(TComparer<TProtoBufEnumValue>.Construct(
-    function(const Left, Right: TProtoBufEnumValue): integer
+    function(const Left, Right: TProtoBufEnumValue): Integer
     begin
       Result := Left.Value - Right.Value;
     end));
@@ -588,7 +595,7 @@ end;
 
 function TProtoBufMessage.HasPropertyOfType(const APropType: string): Boolean;
 var
-  i: integer;
+  i: Integer;
 begin
   Result := False;
   for i := 0 to Count - 1 do
@@ -599,9 +606,9 @@ begin
       end;
 end;
 
-procedure TProtoBufMessage.ParseFromProto(const Proto: string; var iPos: integer);
+procedure TProtoBufMessage.ParseFromProto(const Proto: string; var iPos: Integer);
 var
-  Item, OneOfPropertyParent: TProtoBufProperty;
+  item, OneOfPropertyParent: TProtoBufProperty;
   TempComments: TStringList;
 begin
   inherited;
@@ -612,27 +619,28 @@ begin
     }
   *)
   ReadCommentIfExists(FComments, True, Proto, iPos);
-  OneOfPropertyParent:= nil;
+  OneOfPropertyParent := nil;
   FName := ReadWordFromBuf(Proto, iPos, ['{']);
   SkipRequiredChar(Proto, iPos, '{');
-  TempComments:= TStringList.Create;
+  ReadCommentIfExists(FComments, True, Proto, iPos);
+  TempComments := TStringList.Create;
   try
-    TempComments.TrailingLineBreak:= False;
+    TempComments.TrailingLineBreak := False;
     while (Proto[iPos] <> '}') or (OneOfPropertyParent <> nil) do
       begin
         if (OneOfPropertyParent <> nil) and (Proto[iPos] = '}') then
-        begin
-          SkipRequiredChar(Proto, iPos, '}');
-          SkipWhitespaces(Proto, iPos);
-          ReadCommentIfExists(OneOfPropertyParent.Comments, False, Proto, iPos);
-          OneOfPropertyParent:= nil;
-          SkipWhitespaces(Proto, iPos);
-          Continue;
-        end;
+          begin
+            SkipRequiredChar(Proto, iPos, '}');
+            SkipWhitespaces(Proto, iPos);
+            ReadCommentIfExists(OneOfPropertyParent.Comments, False, Proto, iPos);
+            OneOfPropertyParent := nil;
+            SkipWhitespaces(Proto, iPos);
+            Continue;
+          end;
         TempComments.Clear;
         SkipWhitespaces(Proto, iPos);
         ReadCommentIfExists(TempComments, True, Proto, iPos);
-        if Proto[iPos] = '}' then //after reading comments, the message might prematurly end
+        if Proto[iPos] = '}' then // after reading comments, the message might prematurly end
           Continue;
         if PosEx('enum', Proto, iPos) = iPos then
           begin
@@ -653,22 +661,22 @@ begin
               end;
           end;
 
-        Item := TProtoBufProperty.Create(FRoot);
+        item := TProtoBufProperty.Create(FRoot);
         try
-          Item.ParseFromProto(Proto, iPos);
-          Item.OneOfPropertyParent:= OneOfPropertyParent;
-          Item.AddCommentsToBeginning(TempComments);
-          Add(Item);
-          if Item.PropKind = ptOneOf then
-          begin
-            if OneOfPropertyParent <> nil then
-              raise EParserError.CreateFmt('Unsupported nested oneof property %s within %s', [Item.FName, OneOfPropertyParent.Name]);
-            OneOfPropertyParent:= Item;
-          end;
-          Item := nil;
+          item.ParseFromProto(Proto, iPos);
+          item.OneOfPropertyParent := OneOfPropertyParent;
+          item.AddCommentsToBeginning(TempComments);
+          Add(item);
+          if item.PropKind = ptOneOf then
+            begin
+              if OneOfPropertyParent <> nil then
+                raise EParserError.CreateFmt('Unsupported nested oneof property %s within %s', [item.FName, OneOfPropertyParent.Name]);
+              OneOfPropertyParent := item;
+            end;
+          item := nil;
           SkipWhitespaces(Proto, iPos);
         finally
-          Item.Free;
+          item.Free;
         end;
       end;
   finally
@@ -677,8 +685,8 @@ begin
   SkipRequiredChar(Proto, iPos, '}');
   ReadCommentIfExists(FComments, False, Proto, iPos);
 
-  //do NOT sort field definitions by FieldNumber; order is important for OneOf,
-  //also better to keep order of declaration the same as in .proto file
+  // do NOT sort field definitions by FieldNumber; order is important for OneOf,
+  // also better to keep order of declaration the same as in .proto file
 end;
 
 { TProtoFile }
@@ -726,7 +734,7 @@ end;
 procedure TProtoFile.ImportFromProtoFile(const AFileName: string);
 var
   SL: TStringList;
-  iPos: integer;
+  iPos: Integer;
   OldFileName: string;
   OldName: string;
   sFileName: string;
@@ -759,7 +767,7 @@ begin
   end;
 end;
 
-procedure TProtoFile.ParseEnum(const Proto: string; var iPos: integer; Comments: TStringList);
+procedure TProtoFile.ParseEnum(const Proto: string; var iPos: Integer; Comments: TStringList);
 var
   Enum: TProtoBufEnum;
 begin
@@ -775,17 +783,17 @@ begin
   end;
 end;
 
-procedure TProtoFile.ParseFromProto(const Proto: string; var iPos: integer);
+procedure TProtoFile.ParseFromProto(const Proto: string; var iPos: Integer);
 var
   Buf: string;
-  i, j: integer;
+  i, j: Integer;
   TempComments: TStringList;
 begin
   // need skip comments,
   // parse .proto package name
-  TempComments:= TStringList.Create;
+  TempComments := TStringList.Create;
   try
-    TempComments.TrailingLineBreak:= False;
+    TempComments.TrailingLineBreak := False;
     while iPos < Length(Proto) do
       begin
         SkipWhitespaces(Proto, iPos);
@@ -819,21 +827,21 @@ begin
           end;
 
         if Buf = 'enum' then
-        begin
-          ParseEnum(Proto, iPos, TempComments);
-          TempComments.Clear;
-        end;
+          begin
+            ParseEnum(Proto, iPos, TempComments);
+            TempComments.Clear;
+          end;
 
         if Buf = 'message' then
-        begin
-          ParseMessage(Proto, iPos, TempComments);
-          TempComments.Clear;
-        end;
+          begin
+            ParseMessage(Proto, iPos, TempComments);
+            TempComments.Clear;
+          end;
         if Buf = 'extend' then
-        begin
-          ParseMessage(Proto, iPos, TempComments, True);
-          TempComments.Clear;
-        end;
+          begin
+            ParseMessage(Proto, iPos, TempComments, True);
+            TempComments.Clear;
+          end;
       end;
   finally
     TempComments.Free;
@@ -848,10 +856,29 @@ begin
       end;
 end;
 
-procedure TProtoFile.ParseMessage(const Proto: string; var iPos: integer; Comments: TStringList; IsExtension: Boolean);
+procedure TProtoFile.ParseMessage(const Proto: string; var iPos: Integer; Comments: TStringList; IsExtension: Boolean);
+  function GetPrettyNameFromComments(MsgComments: TStrings): string;
+  var
+    i: Integer;
+    s: string;
+  begin
+    // ExtName:NOTAMItem
+    Result := '';
+    for i := 0 to MsgComments.Count - 1 do
+      begin
+        s := StringReplace(MsgComments[i], ' ', '', [rfReplaceAll]);
+        if StartsText('ExtName:', s) then
+          begin
+            Result := Trim(StringReplace(s, 'ExtName:', '', [rfIgnoreCase]));
+            Break;
+          end;
+      end;
+  end;
+
 var
   Msg: TProtoBufMessage;
-  i: integer;
+  i: Integer;
+  s: string;
 begin
   Msg := TProtoBufMessage.Create(Self);
   try
@@ -859,13 +886,21 @@ begin
     Msg.ParseFromProto(Proto, iPos);
     if IsExtension then
       begin
-        for i := 1 to High(integer) do
-          if FProtoBufMessages.FindByName(Msg.Name + 'Extension' + IntToStr(i)) = nil then
-            begin
-              Msg.ExtendOf := Msg.Name;
-              Msg.Name := Msg.Name + 'Extension' + IntToStr(i);
-              Break;
-            end;
+        // dirty hack for pretty naming
+        s := GetPrettyNameFromComments(Msg.Comments);
+        if s <> '' then
+          begin
+            Msg.ExtendOf := Msg.Name;
+            Msg.Name := s;
+          end
+        else
+          for i := 1 to High(Integer) do
+            if FProtoBufMessages.FindByName(Msg.Name + 'Extension' + IntToStr(i)) = nil then
+              begin
+                Msg.ExtendOf := Msg.Name;
+                Msg.Name := Msg.Name + 'Extension' + IntToStr(i);
+                Break;
+              end;
       end;
     Msg.AddCommentsToBeginning(Comments);
     FProtoBufMessages.Add(Msg);
@@ -885,7 +920,7 @@ end;
 
 function TProtoBufMessageList.FindByName(const MessageName: string): TProtoBufMessage;
 var
-  i: integer;
+  i: Integer;
 begin
   Result := nil;
   for i := 0 to Count - 1 do
@@ -900,7 +935,7 @@ end;
 
 function TProtoBufEnumList.FindByName(const EnumName: string): TProtoBufEnum;
 var
-  i: integer;
+  i: Integer;
 begin
   Result := nil;
   for i := 0 to Count - 1 do
