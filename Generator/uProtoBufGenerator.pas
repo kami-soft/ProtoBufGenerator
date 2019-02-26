@@ -477,10 +477,7 @@ procedure TProtoBufGenerator.GenerateImplementationSection(Proto: TProtoFile; SL
               else
                 begin
                   bNeedtmpBuf:= True;
-                  SL.Add(       '  begin');
-                  SL.Add(Format('    F%s.SaveToBuf(tmpBuf);', [DelphiProp.PropertyName]));
-                  SL.Add(Format('    ProtoBuf.writeMessage(%s, tmpBuf);', [DelphiProp.tagName]));
-                  SL.Add(       '  end;');
+                  SL.Add(Format('    SaveMessageFieldToBuf(F%s, %s, tmpBuf, ProtoBuf);', [DelphiProp.PropertyName, DelphiProp.tagName]));
                 end;
           end
         else
