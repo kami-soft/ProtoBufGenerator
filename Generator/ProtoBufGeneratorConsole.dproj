@@ -88,6 +88,7 @@
         <DCC_RemoteDebug>true</DCC_RemoteDebug>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
+        <DCC_MapFile>3</DCC_MapFile>
         <DCC_RemoteDebug>false</DCC_RemoteDebug>
         <Debugger_RunParams>/f &quot;D:\DelphiComponents\ProtoBuf\Ready&quot; /o &quot;c:\Temp&quot; </Debugger_RunParams>
     </PropertyGroup>

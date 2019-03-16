@@ -866,9 +866,10 @@ procedure TProtoFile.ParseMessage(const Proto: string; var iPos: Integer; Commen
     Result := '';
     for i := 0 to MsgComments.Count - 1 do
       begin
-        s := StringReplace(MsgComments[i], ' ', '', [rfReplaceAll]);
+        s:=Trim(MsgComments[i]);
         if StartsText('ExtName:', s) then
           begin
+            s := StringReplace(s, ' ', '', [rfReplaceAll]);
             Result := Trim(StringReplace(s, 'ExtName:', '', [rfIgnoreCase]));
             Break;
           end;

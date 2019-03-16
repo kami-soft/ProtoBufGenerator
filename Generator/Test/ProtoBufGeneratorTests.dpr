@@ -15,7 +15,8 @@ program ProtoBufGeneratorTests;
 {$ENDIF}
 
 uses
-  DUnitTestRunner,
+
+ DUnitTestRunner,
   TestuProtoBufParserClasses in 'TestuProtoBufParserClasses.pas',
   uProtoBufParserClasses in '..\uProtoBufParserClasses.pas',
   uProtoBufParserAbstractClasses in '..\uProtoBufParserAbstractClasses.pas',

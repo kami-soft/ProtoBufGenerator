@@ -1,7 +1,8 @@
 program ProtoBufGenerator;
 
 uses
-  Vcl.Forms,
+
+ Vcl.Forms,
   ufmMain in 'ufmMain.pas' {fmMain},
   pbInput in '..\pbInput.pas',
   pbOutput in '..\pbOutput.pas',
