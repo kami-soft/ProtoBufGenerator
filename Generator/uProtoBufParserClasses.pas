@@ -610,6 +610,7 @@ procedure TProtoBufMessage.ParseFromProto(const Proto: string; var iPos: Integer
 var
   item, OneOfPropertyParent: TProtoBufProperty;
   TempComments: TStringList;
+  bIsMsgComment: Boolean;
 begin
   inherited;
   (*
@@ -618,6 +619,7 @@ begin
     required int64 Field2 = 2;
     }
   *)
+  bIsMsgComment:=True;
   ReadCommentIfExists(FComments, True, Proto, iPos);
   OneOfPropertyParent := nil;
   FName := ReadWordFromBuf(Proto, iPos, ['{']);
@@ -640,6 +642,9 @@ begin
         TempComments.Clear;
         SkipWhitespaces(Proto, iPos);
         ReadCommentIfExists(TempComments, True, Proto, iPos);
+        if bIsMsgComment then
+          FComments.AddStrings(TempComments);
+
         if Proto[iPos] = '}' then // after reading comments, the message might prematurly end
           Continue;
         if PosEx('enum', Proto, iPos) = iPos then
@@ -648,6 +653,7 @@ begin
             if FRoot is TProtoFile then
               begin
                 TProtoFile(FRoot).ParseEnum(Proto, iPos, TempComments);
+                bIsMsgComment:=False;
                 Continue;
               end;
           end;
@@ -657,6 +663,7 @@ begin
             if FRoot is TProtoFile then
               begin
                 TProtoFile(FRoot).ParseMessage(Proto, iPos, TempComments);
+                bIsMsgComment:=False;
                 Continue;
               end;
           end;
@@ -675,6 +682,7 @@ begin
             end;
           item := nil;
           SkipWhitespaces(Proto, iPos);
+          bIsMsgComment:=False;
         finally
           item.Free;
         end;
@@ -862,11 +870,13 @@ procedure TProtoFile.ParseMessage(const Proto: string; var iPos: Integer; Commen
     i: Integer;
     s: string;
   begin
-    // ExtName:NOTAMItem
+    (* extend StructuredItem { //ExtName:NOTAMItem
+
+      } *)
     Result := '';
     for i := 0 to MsgComments.Count - 1 do
       begin
-        s:=Trim(MsgComments[i]);
+        s := Trim(MsgComments[i]);
         if StartsText('ExtName:', s) then
           begin
             s := StringReplace(s, ' ', '', [rfReplaceAll]);
