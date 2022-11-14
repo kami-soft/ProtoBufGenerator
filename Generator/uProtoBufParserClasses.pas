@@ -730,6 +730,8 @@ var
   OldFileName: string;
   OldName: string;
   sFileName: string;
+const
+  cIncludePathDelimiter = '/';
 begin
   if FFileName = '' then
     raise EParserError.CreateFmt('Cant import from %s, because source .proto file name not specified', [AFileName]);
@@ -737,7 +739,8 @@ begin
   try
     SL := TStringList.Create;
     try
-      sFileName := RelToAbs(AFileName, ExtractFilePath(FFileName));
+      sFileName := FName.Replace('.', cIncludePathDelimiter);
+      sFileName := FRootPath + AFileName.Replace(cIncludePathDelimiter, PathDelim);
       SL.LoadFromFile(sFileName);
 
       OldFileName := FFileName;
@@ -795,7 +798,9 @@ begin
 
         if Buf = 'package' then
           begin
-            FName := ReadWordFromBuf(Proto, iPos, [';']);
+            FPackage := ReadWordFromBuf(Proto, iPos, [';']);
+            FName := Format('%s.%s', [FPackage, FName]);
+            FRootPath := ExtractFilePath(FFileName).Replace(FPackage.Replace('.', PathDelim), '');
             SkipRequiredChar(Proto, iPos, ';');
             TempComments.Clear;
           end;

@@ -9,8 +9,10 @@ uses
 type
   TAbstractProtoBufParserItem = class(TObject)
   protected
+    FPackage: string;
     FName: string;
     FRoot: TAbstractProtoBufParserItem;
+    FRootPath: string;
     FComments: TStringList;
   public
     constructor Create(ARoot: TAbstractProtoBufParserItem); virtual;
@@ -19,7 +21,9 @@ type
     procedure ParseFromProto(const Proto: string; var iPos: Integer); virtual; abstract;
     procedure AddCommentsToBeginning(AComments: TStringList);
 
+    property RootPath: string read FRootPath write FRootPath;
     property Name: string read FName write FName;
+    property Package: string read FPackage write FPackage;
     property Comments: TStringList read FComments;
   end;
 
