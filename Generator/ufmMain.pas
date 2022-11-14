@@ -23,11 +23,15 @@ type
     btnGenerate: TButton;
     edOutputFolder: TEdit;
     btnChooseOutputFolder: TButton;
+    lblInput: TLabel;
+    lblOutput: TLabel;
+    btnChooseProtoInputFolder: TButton;
     procedure btnOpenProtoFileClick(Sender: TObject);
     procedure btnChooseOutputFolderClick(Sender: TObject);
     procedure btnGenerateClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormCreate(Sender: TObject);
+    procedure btnChooseProtoInputFolderClick(Sender: TObject);
   private
     { Private declarations }
     procedure Generate(SourceFiles: TStrings; const OutputDir: string);
@@ -55,6 +59,27 @@ begin
   Dir := edOutputFolder.Text;
   if SelectDirectory('Select output directory', '', Dir, [sdNewFolder, sdShowShares, sdNewUI, sdValidateDir], nil) then
     edOutputFolder.Text := Dir;
+end;
+
+procedure TfmMain.btnChooseProtoInputFolderClick(Sender: TObject);
+var
+  LFileList: TArray<string>;
+  i: Integer;
+begin
+  odProtoFile.Options := odProtoFile.Options + [fdoPickFolders];
+  if odProtoFile.Execute then
+  begin
+    edProtoFileName.Text := '';
+    LFileList := TDirectory.GetFiles(odProtoFile.FileName,'*.proto', TSearchOption.soAllDirectories);
+    for i := 0 to Length(LFileList) -1 do
+    begin
+      edProtoFileName.Text := edProtoFileName.Text + LFileList[i];
+      if i <> Length(LFileList) -1 then
+        edProtoFileName.Text := edProtoFileName.Text + odProtoFile.Files.Delimiter;
+    end;
+
+  end;
+  odProtoFile.Options := odProtoFile.Options - [fdoPickFolders];
 end;
 
 procedure TfmMain.btnGenerateClick(Sender: TObject);
