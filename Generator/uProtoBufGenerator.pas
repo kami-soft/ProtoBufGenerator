@@ -182,6 +182,8 @@ type
   end;
 
 procedure ParsePropType(Prop: TProtoBufProperty; Proto: TProtoFile; out DelphiProp: TDelphiProperty);
+var
+  LPropertyNameFirstCharUpperCase: string;
 begin
   DelphiProp.IsList := Prop.PropKind = ptRepeated;
   DelphiProp.isComplex := StrToPropertyType(Prop.PropType) = sptComplex;
@@ -189,14 +191,15 @@ begin
     DelphiProp.isObject := Assigned(Proto.ProtoBufMessages.FindByName(Prop.PropType))
   else
     DelphiProp.isObject := False;
+  LPropertyNameFirstCharUpperCase := AnsiUpperCase(Prop.Name[1]) + AnsiRightStr(Prop.Name, Length(Prop.Name) -1);
   if not DelphiProp.IsList then
     begin
-      DelphiProp.PropertyName := Prop.Name;
+      DelphiProp.PropertyName := LPropertyNameFirstCharUpperCase;
       DelphiProp.PropertyType := ProtoPropTypeToDelphiType(Prop.PropType);
     end
   else
     begin
-      DelphiProp.PropertyName := Format('%sList', [Prop.Name]);
+      DelphiProp.PropertyName := Format('%sList', [LPropertyNameFirstCharUpperCase]);
       if DelphiProp.isObject then
         DelphiProp.PropertyType := Format('TProtoBufClassList<%s>', [ProtoPropTypeToDelphiType(Prop.PropType)])
       else
