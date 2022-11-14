@@ -122,7 +122,7 @@ type
 
     FInImportCounter: integer;
     FFileName: string;
-    FImports: TStrings;
+    FImports: TStringList;
     FProtoSyntaxVersion: TProtoSyntaxVersion;
 
     procedure ImportFromProtoFile(const AFileName: string);
@@ -137,7 +137,7 @@ type
 
     procedure ParseFromProto(const Proto: string; var iPos: integer); override;
 
-    property Imports: TStrings read FImports;
+    property Imports: TStringList read FImports;
     property ProtoBufEnums: TProtoBufEnumList read FProtoBufEnums;
     property ProtoBufMessages: TProtoBufMessageList read FProtoBufMessages;
 
@@ -687,6 +687,8 @@ constructor TProtoFile.Create(ARoot: TAbstractProtoBufParserItem);
 begin
   inherited;
   FImports := TStringList.Create;
+  FImports.Sorted := True;
+  FImports.Duplicates := dupIgnore;
   FProtoBufMessages := TProtoBufMessageList.Create;
   FProtoBufEnums := TProtoBufEnumList.Create;
 end;
