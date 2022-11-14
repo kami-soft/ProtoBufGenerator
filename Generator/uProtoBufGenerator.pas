@@ -280,8 +280,10 @@ end;
 procedure TProtoBufGenerator.Generate(Proto: TProtoFile; const OutputDir: string; Encoding: TEncoding);
 var
   FS: TFileStream;
+  LOutputFileName: string;
 begin
-  FS := TFileStream.Create(IncludeTrailingPathDelimiter(OutputDir) + Proto.Name + '.pas', fmCreate);
+  LOutputFileName := Format('%s%s.pas', [IncludeTrailingPathDelimiter(OutputDir), Proto.Name]);
+  FS := TFileStream.Create(LOutputFileName, fmCreate);
   try
     Generate(Proto, FS, Encoding);
   finally
