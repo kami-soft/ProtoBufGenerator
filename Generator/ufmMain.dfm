@@ -19,9 +19,9 @@ object fmMain: TfmMain
   object lblInput: TLabel
     Left = 8
     Top = 5
-    Width = 83
+    Width = 96
     Height = 13
-    Caption = 'Proto File/Folder:'
+    Caption = 'Proto File(s)/Folder:'
   end
   object lblOutput: TLabel
     Left = 8
@@ -37,7 +37,7 @@ object fmMain: TfmMain
     Height = 21
     Anchors = [akLeft, akTop, akRight]
     TabOrder = 0
-    TextHint = 'Choose proto file'
+    TextHint = 'Choose proto file(s) or a folder'
   end
   object btnOpenProtoFile: TButton
     Left = 391
